@@ -9,7 +9,7 @@
 }
 
 
-.fondo-logo {
+/* .fondo-logo {
   position: absolute;
 
   right: -10%;
@@ -20,13 +20,13 @@
 
   filter: brightness(0.985);
 
-  z-index: 0;
+  z-index: 1;
   pointer-events: none;
   user-select: none;
 }
 
 /* --- MOBILE FIX --- */
-@media (max-width: 1000px) {
+/* @media (max-width: 1000px) {
   .fondo-logo {
  
     right: -35%;
@@ -35,7 +35,6 @@
     width: 130%;
     height: auto;
 } 
-/* .fondo-logo { outline: 2px solid rgb(195, 255, 0); } */
 }
 
 @media (max-width: 800px) and (orientation: landscape)  {
@@ -47,8 +46,7 @@
     width: 75%;
     height: auto;
 } 
-/* .fondo-logo { outline: 2px solid red; } */
-}
+} */ 
 
 
 

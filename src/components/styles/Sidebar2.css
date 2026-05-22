@@ -116,7 +116,7 @@
   background:#662D91;
   color: white;
   transition: width 0.3s ease;
-  z-index: 10;
+  z-index: 100;
 
   overflow-x: visible;
   overflow-y: visible;

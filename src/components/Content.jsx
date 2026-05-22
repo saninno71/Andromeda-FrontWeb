@@ -1,4 +1,4 @@
-import fondoLogo from "./styles/res/fondo-logo.png";
+// import fondoLogo from "./styles/res/fondo-logo.png";
 import "./styles/Content.css";
 
 import { Suspense, useMemo } from "react";
@@ -35,9 +35,9 @@ function Content({activeRoute}) {
   return (
  
     <div className="content"    >
-      <p>Página seleccionada: {activeRoute}</p>
+      {/* <p>Página seleccionada: {activeRoute}</p> */}
       {contenido}
-      <img className="fondo-logo" src={fondoLogo} />
+      {/* <img className="fondo-logo" src={fondoLogo} /> */}
     </div>
 
   );
