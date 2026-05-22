@@ -1,1 +1,0 @@
-import{t as e}from"./index-BssgRkuS.js";var t=e();function n(){return(0,t.jsxs)(`div`,{children:[(0,t.jsx)(`h1`,{children:`Clarín`}),(0,t.jsx)(`p`,{children:`Esta es la página de Clarín.`})]})}export{n as default};
