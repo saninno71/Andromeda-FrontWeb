@@ -13,62 +13,12 @@ body,
     height: 100dvh;
 }
 
-/* HEADER */
-/* .PantallaPrincipal .header {
-  height: 80px;
-  background: #ddd;
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  justify-content: space-between;
-} */
 
 /* MAIN (contenedor sidebar + content) */
 .PantallaPrincipal .main {
   display: flex;
   flex: 1;
-  /* min-height: 0; */
+  min-height: 0;
   position: relative;
 }
 
-/* CONTENT */
-/* .PantallaPrincipal .content {
-  flex: 1;
-  background: yellow;
-  padding: 20px;
-  overflow: auto;
-} */
-
-/* SIDEBAR */
-/* .PantallaPrincipal .sidebar {
-  width: 30px;
-  background: blue;
-  color: white;
-  height: 100%;
-  position: relative;
-  flex-shrink: 0;
-} */
-
-/* SIDEBAR INTERNA */
-/* .PantallaPrincipal .sidebar-inner {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 30px;
-  height: 100%;
-  background: purple;
-  color: white;
-  overflow: hidden;
-  transition: width 0.3s ease;
-  z-index: 10;
-} */
-
-/* EXPANSIÓN */
-/* .PantallaPrincipal .sidebar-inner.expanded {
-  width: 200px;
-} */
-
-/* OCULTAR LABEL CUANDO ESTÁ COLAPSADO */
-/* .PantallaPrincipal .sidebar-inner:not(.expanded) .label {
-  display: none;
-} */

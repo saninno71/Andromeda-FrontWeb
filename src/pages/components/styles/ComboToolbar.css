@@ -1,0 +1,190 @@
+.comboToolbar {
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    height:36px;
+
+    padding-left:12px;
+    padding-right:12px;
+
+    border:1px solid #00AEEF;
+
+    border-radius:8px;
+
+    background:white;
+
+    cursor:pointer;
+}
+
+.comboToolbarIcono {
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+}
+
+.comboToolbarFlecha {
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+}
+
+.comboToolbarContenedor {
+
+    position:relative;
+}
+
+/* .comboToolbarPopup {
+
+    position:absolute;
+
+    top:42px;
+
+    right:0;
+
+    width:220px;
+
+    min-height:120px;
+
+    background:white;
+
+    border:1px solid #00AEEF;
+
+    border-radius:8px;
+
+    z-index:999;
+} */
+.comboToolbarPopup {
+
+    position:absolute;
+
+    top:38px;
+
+    right:0;
+
+    width:150px;
+
+    background:white;
+
+    border:1px solid #00AEEF;
+
+    border-radius:8px;
+
+    overflow:hidden;
+
+    z-index:999;
+}
+
+.comboToolbarItem {
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    height:30px;
+
+    padding-left:14px;
+    padding-right:14px;
+
+    cursor:pointer;
+
+    transition:0.15s;
+}
+
+.comboToolbarItem:hover {
+
+    background:#F2FBFF;
+}
+
+.comboToolbarItemIcono {
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+}
+
+.comboToolbarItemTexto {
+
+    font-family:'Inter', sans-serif;
+
+    font-size:12px;
+
+    font-weight:500;
+
+    color:#00AEEF;
+}
+
+.comboToolbarFlecha.abierto {
+    transform:rotate(180deg);
+}
+
+
+
+
+.comboToolbarZonaInferior {
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+    padding:10px;
+}
+
+.comboToolbarTitulo {
+
+    font-family:'Inter', sans-serif;
+
+    font-size:9px;
+
+    font-weight:500;
+
+    color:#00AEEF;
+}
+
+.comboToolbarSubcombo {
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    height:25px;
+
+    padding-left:12px;
+    padding-right:12px;
+
+    border:1px solid #00AEEF;
+
+    border-radius:6px;
+
+    background:white;
+
+    cursor:pointer;
+}
+
+.comboToolbarSubcomboTexto {
+
+    font-family:'Inter', sans-serif;
+
+    font-size:12px;
+
+    font-weight:500;
+
+    color:#00AEEF;
+}

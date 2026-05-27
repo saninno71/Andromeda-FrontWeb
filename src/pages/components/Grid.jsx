@@ -13,22 +13,30 @@ import {formatearValor} from "./gridFormatos";
 
 function Grid({columnasVisibles,dataGrid,mostrarCheck}) {
 
+     const ANCHO_COLUMNA_CHECK = 20;
+
+    // ----------------------------------------------------------------------
+    // VARIABLES DE ESTADO PARA FORZAR RENDERIZADOS y VARIABLES DE REFERENCIA
+    // ----------------------------------------------------------------------
+    
+    //coleccion de KEYs seleccionadas por checks
     const [keysSeleccionadas, setKeysSeleccionadas] = useState([]);
     const refCheckTodos = useRef();
     const [totalesGrid,setTotalesGrid] = useState([]);
-    const ANCHO_COLUMNA_CHECK = 20;
-
+   
+    //variables de estado para sincrinzar scrolls y provocar renderizado posterior
     const refGrillaHeader = useRef(null);
     const refGrillaDatos = useRef(null);
     const refGrillaTotales = useRef(null);
-
     const refScrollHorizontal = useRef(null);
     const refScrollVertical = useRef(null);
 
+    //variables de estado para adminsitrar la visualización del menu flotante
     const [filaSeleccionada,setFilaSeleccionada] = useState(null);
     const [mostrarMenuFila,setMostrarMenuFila] = useState(false);
     const [topMenuFila,setTopMenuFila] = useState(0);
 
+    //inicializa coleccion de columnas ordenadas por default
     const [ordenamiento,setOrdenamiento] =
     useState(
         obtenerOrdenamientoDefault(
@@ -36,55 +44,36 @@ function Grid({columnasVisibles,dataGrid,mostrarCheck}) {
         )
     );
 
-
-    // function seleccionarFila(
-    //     fila
-    // )
-    // {
-    //     setFilaSeleccionada(fila);
-
-    //     setMostrarMenuFila(true);
-    // }
-    // function seleccionarFila(fila)
-    // {
-    //     if(filaSeleccionada === fila)
-    //     {
-    //         setFilaSeleccionada(null);
-    //         setMostrarMenuFila(false);
-
-    //         return;
-    //     }
-
-    //     setFilaSeleccionada(fila);
-    //     setMostrarMenuFila(true);
-    // }
-function seleccionarFila(fila,e)
-{
-    if(filaSeleccionada === fila)
+    //logica para adminsitar la seleccion de la fila y visualizacion del menu flotante
+    function seleccionarFila(fila,e)
     {
-        setFilaSeleccionada(null);
-        setMostrarMenuFila(false);
+        if(filaSeleccionada === fila)
+        {
+            //si fila seleccionada la deselecciona
+            setFilaSeleccionada(null);
+            setMostrarMenuFila(false);
 
-        return;
+            return;
+        }
+
+        const rectFila =
+            e.currentTarget.getBoundingClientRect();
+
+        const rectGrilla =
+            refGrillaDatos.current.getBoundingClientRect();
+
+        const top =
+            rectFila.top
+            - rectGrilla.top
+            + refGrillaDatos.current.scrollTop;
+
+        setTopMenuFila(top);
+
+        setFilaSeleccionada(fila);
+        setMostrarMenuFila(true);
     }
 
-    const rectFila =
-        e.currentTarget.getBoundingClientRect();
-
-    const rectGrilla =
-        refGrillaDatos.current.getBoundingClientRect();
-
-    const top =
-        rectFila.top
-        - rectGrilla.top
-        + refGrillaDatos.current.scrollTop;
-
-    setTopMenuFila(top);
-
-    setFilaSeleccionada(fila);
-    setMostrarMenuFila(true);
-}
-
+    //determina si es una fila seleccioanda
     function obtenerClaseFila(
         fila
     )
@@ -97,9 +86,11 @@ function seleccionarFila(fila,e)
         return "";
     }
 
-
+    // ----------------------------------------------------------------------
     /*INICIO ORDENAMIENTO DE FILAS*/
+    // ----------------------------------------------------------------------
 
+    //actava/desactiva el orden con la columna
     function manejarOrden(campo)
     {
 
@@ -124,6 +115,7 @@ function seleccionarFila(fila,e)
         ordenamiento
     ]);
         
+    //visualizacion de columnas ordenadas
     function renderOrdenColumna(campo)
     {
         const orden = obtenerOrdenColumna(
@@ -151,6 +143,7 @@ function seleccionarFila(fila,e)
         );
     }
 
+    //devuelve marca de columna ordenada
     function obtenerClaseHeader(campo)
     {
         const orden = obtenerOrdenColumna(
@@ -167,7 +160,6 @@ function seleccionarFila(fila,e)
     }
 
     /*FIN ORDENAMIENTO DE FILAS*/
-
 
 
 
@@ -208,6 +200,7 @@ function seleccionarFila(fila,e)
         }
     }
 
+    //ACTUALIZA COLECCION DE FILAS CHECKEADAS
     function cambiarCheckFila(keyFila) {
 
         setKeysSeleccionadas(function(keysAnteriores) {
@@ -227,6 +220,7 @@ function seleccionarFila(fila,e)
         });
     }
 
+    //CALCULO DE TOTALES
     function calcularTotales() {
 
         const filasASumar =
@@ -290,6 +284,7 @@ function seleccionarFila(fila,e)
         );
     }
 
+    //SOLO APLICA PRIMER RENDERIZADO
     useEffect(() => {
 
         setTotalesGrid(
@@ -303,6 +298,7 @@ function seleccionarFila(fila,e)
         columnasVisibles
     ]);
 
+    //SOLO APLICA PRIMER RENDERIZADO
     useEffect(() => {
 
         if (
@@ -321,6 +317,7 @@ function seleccionarFila(fila,e)
         estanTodasSeleccionadas
     ]);
 
+    //ALINEACION DE COLUMNA Y ANCHO SEGUN PARAMETRIA
     function estiloColumna(columna) {
 
         return {
@@ -354,6 +351,7 @@ function seleccionarFila(fila,e)
         ? []
         : columnasParaMostrar.slice(indicePrimeraColumnaSuma);
 
+    //DEVUELVE EL ESPACIO VISIBLE EN LA GRILLA ANTES DEL PRIMER TOTAL (PARA UBICAR LEYENDA DE TOTALES)
     function anchoColumnasAntesDeSuma() {
 
         let ancho = 0;
@@ -373,6 +371,7 @@ function seleccionarFila(fila,e)
         return ancho+7;
     }
 
+    //ESTABLECE EL CORTE DE TEXTO EN COLUNNA
     function claseTextoColumna(columna) {
 
         if (columna.desdoblarTexto === true) {
@@ -383,6 +382,7 @@ function seleccionarFila(fila,e)
 
     }
 
+    //ESTABLECE PAR / IMPRAR PARA EL ALTERNADO DE COLORES DE LA GRILLA
     function claseFila(indiceFila, keyFila) {
 
         if (keysSeleccionadas.includes(keyFila)) {
@@ -397,7 +397,7 @@ function seleccionarFila(fila,e)
     }
 
     /* SCROLL */
-
+    //SINCROMOZXACION HORIZONTAL DE SCROLL CON LA GRILLA
     function sincronizarDesdeScrollHorizontal() {
 
         const scrollLeft =
@@ -417,6 +417,7 @@ function seleccionarFila(fila,e)
 
     }
 
+    //SINCROMOZXACION HORIZONTAL DE SCROLL CON LA GRILLA
     function sincronizarDesdeScrollVertical() {
 
         const scrollTop =

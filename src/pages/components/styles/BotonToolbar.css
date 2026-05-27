@@ -1,0 +1,73 @@
+.botonToolbar {
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    height:36px;
+
+    padding-left:14px;
+    padding-right:14px;
+
+    border:1px solid #00AEEF;
+
+    border-radius:4px;
+
+    background:white;
+
+    color:#00AEEF;
+
+    font-family:'Inter', sans-serif;
+
+    font-size:13px;
+
+    font-weight:500;
+
+    cursor:pointer;
+
+    transition:0.15s;
+}
+
+.botonToolbar:hover {
+
+    background:#F2FBFF;
+}
+
+.botonToolbarIcono {
+
+    display:flex;
+
+    align-items:center;
+    justify-content:center;
+}
+
+.botonToolbarTexto {
+
+    display:flex;
+
+    align-items:center;
+}
+
+.botonToolbar.primario {
+
+    background:#00AEEF;
+
+    color:white;
+}
+
+.botonToolbar.primario .botonToolbarTexto {
+
+    color:white;
+}
+
+.botonToolbar.transparente {
+
+    background:transparent;
+}
+
+.botonToolbar.transparente:hover {
+
+    background:rgba(255,255,255,0.2);
+}

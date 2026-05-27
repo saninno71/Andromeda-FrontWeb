@@ -1,59 +1,19 @@
 .content {
   flex: 1;
+  min-height:0;
   position: relative;
   overflow: hidden;
 
   display: flex;
   flex-direction: column;
-  /* border: 2px solid rgb(0, 255, 153);  */
+  /* border: 12px solid rgb(0, 255, 153);  */
 }
 
-
-/* .fondo-logo {
-  position: absolute;
-
-  right: -10%;
-  bottom: -25%;
-
-  width: 80%;
-  height: auto;
-
-  filter: brightness(0.985);
-
-  z-index: 1;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* --- MOBILE FIX --- */
-/* @media (max-width: 1000px) {
-  .fondo-logo {
- 
-    right: -35%;
-    bottom: 5%;
-
-    width: 130%;
-    height: auto;
-} 
-}
-
-@media (max-width: 800px) and (orientation: landscape)  {
-  .fondo-logo {
- 
-    right: -5%;
-    bottom: -35%;
-
-    width: 75%;
-    height: auto;
-} 
-} */ 
-
-
-
+/* 
 .content-body {
   position: relative;
   z-index: 1;
 
   flex: 1;
-  /* border: 2px solid rgb(251, 255, 0);  */
-}
+  border: 12px solid rgb(251, 255, 0); 
+} */
