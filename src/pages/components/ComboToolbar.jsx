@@ -1,5 +1,7 @@
 import "./styles/ComboToolbar.css";
-import { useState } from "react";
+// import { useState } from "react";
+import { useEffect,useRef,useState } from "react";
+
 
 import iconFlechaC from "./styles/res/iconFlechaC.png";
 import iconAmpliarTexto from "./styles/res/iconAmpliarTexto.png";
@@ -16,11 +18,40 @@ function ComboToolbar({
 
     //variable de estado para asignar el estado de abierto/cerrado y forzar el renderizado
     const [abierto,setAbierto] = useState(false);
+    const refCombo = useRef();
 
+    useEffect(() => {
+
+function clickFuera(evento)
+
+    {
+
+        if (
+            refCombo.current &&
+            !refCombo.current.contains(evento.target)
+        )
+
+        {
+
+            setAbierto(false);
+
+        }
+
+    }
+
+    document.addEventListener("mousedown",clickFuera);
+
+    return () => {
+
+        document.removeEventListener("mousedown",clickFuera);
+
+    };
+
+},[]);
 
 return (
 
-    <div className="comboToolbarContenedor">
+    <div className="comboToolbarContenedor" ref={refCombo}>
 
         <button
             className="comboToolbar"

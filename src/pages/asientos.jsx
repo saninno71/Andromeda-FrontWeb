@@ -1,13 +1,14 @@
 import "./styles/asientos.css";
 
-import { useEffect,useRef} from "react";
+import { useEffect,useState } from "react";
 //componente grilla
 import Grid from "./components/Grid";
 //componente filtros
 import FiltroAsientos from "./components/FiltroAsientos";
 
 /*importa la info total*/
-import dataGrid  from "./simul/Asientos.json";
+// import dataGrid  from "./simul/Asientos.json";
+import { cargarAsientos } from "./services/asientosService";
 
 function asientos() 
 
@@ -31,6 +32,17 @@ function asientos()
     ];
 
     const mostrarCheck=true;
+    const [dataGrid,setDataGrid] = useState([]);
+
+    async function obtenerAsientos()
+    {
+        const data = await cargarAsientos();
+        setDataGrid(data);
+    }
+
+    useEffect(() => {
+        obtenerAsientos();
+    },[]);
 
   return (
     

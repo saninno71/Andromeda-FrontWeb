@@ -15,6 +15,10 @@ import iconGrilla from "./styles/res/iconGrilla.png";
 import iconFlecha from "./styles/res/iconFlecha.png";
 import iconFlechaC from "./styles/res/iconFlechaC.png";
 import btnCalendar from "./styles/res/btnCalendar.png";
+import btnVFiltros from "./styles/res/btnVFiltros.png";
+import btnMFiltros from "./styles/res/btnMFiltros.png";
+import btnRefresh from "./styles/res/btnRefresh.png";
+
 
 
 function FiltroAsientos() 
@@ -85,17 +89,17 @@ return (
             <BotonToolbar
                 texto=""
                 variante="transparente"
-                icono={<img src={btnLupa} />}
+                icono={<img src={btnVFiltros} />}
             />
             <BotonToolbar
                 texto=""
                 variante="transparente"
-                icono={<img src={btnLupa} />}
+                icono={<img src={btnMFiltros} />}
             />
             <BotonToolbar
                 texto=""
                 variante="transparente"
-                icono={<img src={btnLupa} />}
+                icono={<img src={btnRefresh} />}
             />
         </div>
 
