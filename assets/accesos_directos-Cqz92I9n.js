@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-xjYCO11z.js";var t=`/Andromeda-FrontWeb/assets/fondo-logo-D5bBkvKI.png`,n=e();function r(){return(0,n.jsxs)(`div`,{className:`accesos_directos`,children:[(0,n.jsx)(`img`,{className:`fondo-logo`,src:t}),(0,n.jsx)(`h1`,{children:`Accesos Directos`}),(0,n.jsx)(`p`,{children:`Esta es la página de AD`})]})}export{r as default};
