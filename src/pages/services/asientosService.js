@@ -8,7 +8,8 @@ export async function cargarAsientos()
 
         const response = await fetch(
 
-            "http://localhost:5062/api/contabilidad/asientos/odata/CstctbAsientos",
+            // "http://localhost:5062/api/contabilidad/asientos/odata/CstctbAsientos",
+            "https://andromeda-backend-7eko.onrender.com/api/contabilidad/asientos/odata/CstctbAsientos",
 
             {
 
