@@ -5,8 +5,7 @@ export async function cargarAsientos()
         console.time("fetch");
 
         const response = await fetch(
-            // "https://andromeda-backend-7eko.onrender.com/api/contabilidad/asientos/odata/CstctbAsientos",
-            "http://localhost:5062/api/contabilidad/asientos/odata/CstctbAsientos",
+            "https://andromeda-backend-7eko.onrender.com/api/contabilidad/asientos/odata/CstctbAsientos",
             {
                 method:"POST",
                 headers: {
