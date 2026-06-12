@@ -33,17 +33,35 @@ function asientos()
 
     const mostrarCheck=true;
     const [dataGrid,setDataGrid] = useState([]);
+    const [cargando,setCargando] = useState(false);
 
     async function obtenerAsientos()
     {
-        const data = await cargarAsientos();
-        setDataGrid(data);
+        try
+        {
+        // console.time("total");
+    setCargando(true);
+        // console.time("api");
+    const data = await cargarAsientos();
+        // console.timeEnd("api");
+        // console.time("setDataGrid");
+    setDataGrid(data);
+        // console.timeEnd("setDataGrid");
+        // console.timeEnd("total");
+        }
+        finally
+        {
+            setCargando(false);
+        }
     }
 
     useEffect(() => {
+        // console.time("consulta");
         obtenerAsientos();
+        // console.timeEnd("consulta");
     },[]);
 
+    
   return (
     
     <div className="asientosContent">
@@ -53,7 +71,11 @@ function asientos()
         
 
         <div className="contenedorGrilla">
-            <Grid columnasVisibles={columnasVisibles} dataGrid={dataGrid} mostrarCheck={mostrarCheck}/>
+            <Grid   columnasVisibles={columnasVisibles} 
+                    dataGrid={dataGrid} 
+                    mostrarCheck={mostrarCheck}
+                    cargando={cargando}
+            />
         </div>
 
        

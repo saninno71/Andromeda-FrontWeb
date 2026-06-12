@@ -4,7 +4,8 @@
     flex-direction: column;
     /* height: 500px; */
     min-height:0;
-      overflow:hidden;
+    overflow:hidden;
+    position:relative;
 }
 
 .grillaHeader {
@@ -236,11 +237,8 @@ tbody td {
 }
 
 .thOrdenado {
-
     background:#007AA7;
-
     color:white;
-
 }
 
 .filaMenuActiva {
@@ -261,76 +259,88 @@ tbody td {
 
 } */
 
-
-
-
 .menuFila {
-
     position:absolute;
-
-      right:12px;
-
+    right:12px;
     height:20px;
     top:2px;
-
     /* bottom:2px; */
-    
-
     display:flex;
-
     align-items:center;
-
     gap:12px;
-
     background:white;
-
-     z-index:888;
-
+    z-index:888;
     color:#00AEEF;
-
     font-size:16px;
-
     padding-left:55px;
-
     padding-right:8px;
-
 }
 
 .menuFila img {
-
     cursor:pointer;
     /* filter:brightness(0.7); */
-
 }
 
 .menuFila.fila-par {
-
     background:#FFFFFF;
-
 }
 
 .menuFila.fila-impar {
-
     background:#E3F4FB;
-
 }
 
 .menuFila.filaSeleccionada {
-
     background:#007AA7;
-
 }
 
 .menuFila span {
-
     display:flex;
-
     align-items:center;
-
     justify-content:center;
-
     height:90%;
-
     cursor:pointer;
+}
 
+
+.grillaLoadingOverlay {
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(255,255,255,0.65);
+    backdrop-filter:blur(1px);
+    z-index:99999;
+    flex-direction:column;
+}
+
+
+.loader {
+    width:70px;
+    height:70px;
+    border:8px solid transparent;
+    border-top:8px solid #00AEEF;
+    border-bottom:8px solid #662D91;
+    border-radius:50%;
+    animation:spin 1s linear infinite;
+}
+
+@keyframes spin {
+
+    from {
+        transform:rotate(0deg);
+    }
+
+    to {
+        transform:rotate(360deg);
+    }
+}
+
+.loaderTexto {
+    margin-top:12px;
+    text-align:center;
+    font-family:"Inter",sans-serif;
+    font-size:14px;
+    font-weight:600;
+    color:#662D91;
 }

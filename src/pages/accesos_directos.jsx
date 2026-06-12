@@ -5,7 +5,7 @@ function accesos_directos() {
   return (
     <div className="accesos_directos">
       <img className="fondo-logo" src={fondoLogo} />  
-      <h1>Accesos Directos v1.0</h1>
+      <h1>Accesos Directos v2.0</h1>
       <p>Esta es la página de AD</p>
     </div>
   );

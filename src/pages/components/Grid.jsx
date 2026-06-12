@@ -11,7 +11,7 @@ import { useState,useRef,useEffect,useMemo} from "react";
 import {toggleOrdenamiento,ordenarDatos,obtenerOrdenColumna,obtenerFlechaOrden,obtenerOrdenamientoDefault} from "./gridOrdenamiento";
 import {formatearValor} from "./gridFormatos";
 
-function Grid({columnasVisibles,dataGrid,mostrarCheck}) {
+function Grid({columnasVisibles,dataGrid,mostrarCheck,cargando}) {
 
      const ANCHO_COLUMNA_CHECK = 20;
 
@@ -493,9 +493,34 @@ function Grid({columnasVisibles,dataGrid,mostrarCheck}) {
 
     }
 
+    function manejarRuedaMouse(e)
+    {
+        e.preventDefault();
+
+        if(refScrollVertical.current)
+        {
+            refScrollVertical.current.scrollTop += e.deltaY * 0.3;
+
+            sincronizarDesdeScrollVertical();
+        }
+    }
+
+
     return (
 
     <div className="grilla">
+
+        {cargando && (
+            <div className="grillaLoadingOverlay">
+                <div className="loader"></div>
+                        <div className="loaderTexto">
+            Procesando...
+        </div>
+            </div>
+            
+            
+        )}
+
 
         <div
             className="grillaHeader"
@@ -550,6 +575,7 @@ function Grid({columnasVisibles,dataGrid,mostrarCheck}) {
                 className="grillaDatos"
                 ref={refGrillaDatos}
                 onScroll={sincronizarDesdeGrillaDatos}
+                onWheel={manejarRuedaMouse}
             >
 
                 <table>
