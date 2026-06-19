@@ -1,8 +1,8 @@
 import { useState } from "react";
-import Login from "./Login";
-import SeleccionAmbiente from "./SeleccionDB";
-import PantallaPrincipal from "./PantallaPrincipal";
-import RecuperarPassword from "./RecuperarPassword";
+import Login from "../components/Login/Login";
+import SeleccionAmbiente from "../components/Login/SeleccionDB";
+import PantallaPrincipal from "../components/PantallaPrincipal/PantallaPrincipal";
+import RecuperarPassword from "../components/Login/RecuperarPassword";
 
 function App() {
   const [step, setStep] = useState("login");

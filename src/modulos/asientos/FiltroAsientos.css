@@ -1,0 +1,54 @@
+.filtroAsientos {
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    /* padding:16px; */
+    background:#DCECF3;
+    /* border:2px solid red; */
+}
+
+.fila1Toolbar {
+    display:flex;
+    width:100%;
+}
+
+.toolbarIzquierda {
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-left: 10px;
+}
+
+.toolbarDerecha {
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-left:auto;
+    margin-top: 0px;
+    padding-top:0px;
+    padding-left:12px;
+    padding-bottom:12px;
+    background:#F6F6F6;
+}
+
+.fila2Busqueda {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    margin-left:10px;
+    margin-right:10px;
+}
+
+.controlesBusqueda,
+.accionesBusqueda {
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.fila3FiltrosActivos {
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+}
