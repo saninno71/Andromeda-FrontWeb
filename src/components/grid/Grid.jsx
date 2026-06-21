@@ -320,6 +320,8 @@ function Grid({columnasVisibles,dataGrid,mostrarCheck,cargando}) {
 useEffect(() =>
 {
     setMostrarMenuFila(false);
+    setKeysSeleccionadas([]);
+    setFilaSeleccionada(null);
 },
 [dataGrid]);
 

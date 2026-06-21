@@ -37,7 +37,8 @@ function asientos()
 
     const filtrosDefault = {
         fechaDesde: 0,
-        fechaHasta: 0
+        fechaHasta: 0,
+        empresaID: 0
     };
 
     async function filtrarAsientos(filtros)
@@ -49,7 +50,8 @@ function asientos()
         // console.time("api");
         const data = await cargarAsientos(
             filtros.fechaDesde,
-            filtros.fechaHasta
+            filtros.fechaHasta,
+            filtros.empresaID
         );
         // console.timeEnd("api");
         // console.time("setDataGrid");

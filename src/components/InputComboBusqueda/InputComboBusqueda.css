@@ -1,0 +1,83 @@
+.inputComboBusqueda {
+    position:relative;
+
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    width:180px;
+    height:40px;
+    padding-left:12px;
+    padding-right:12px;
+    border:1px solid #00AEEF;
+    border-radius:8px;
+    background:white;
+}
+
+/* .inputComboBusquedaTitulo {
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    font-weight:500;
+    color:#00AEEF;
+
+    position:relative;
+    top:8px;
+
+    transition:all 0.15s ease;
+} */
+.inputComboBusquedaTitulo {
+    position:absolute;
+    left:12px;
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    font-weight:500;
+    color:#00AEEF;
+    top:12px;
+    transition:all 0.15s ease;
+}
+
+.inputComboBusquedaInput {
+    border:none;
+    outline:none;
+    background:transparent;
+
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    font-weight:500;
+    color:#6D6D6D;
+
+    padding:0;
+    margin:0;
+
+    position:relative;
+    top:1px;
+}
+
+/* .inputComboBusquedaTituloActivo {
+    top:-3px;
+} */
+.inputComboBusquedaTituloActivo {
+    font-size:9px;
+    top:6px;
+}
+
+
+.inputComboBusquedaContenido {
+    display:flex;
+    justify-content:space-between;
+    /* align-items:center; */
+    align-items:flex-start;
+}
+
+.inputComboBusquedaIcono {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+        position:relative;
+    top:2px;
+}
+
+.inputComboBusquedaIcono img {
+    width:12px;
+    height:12px;
+    object-fit:contain;
+}

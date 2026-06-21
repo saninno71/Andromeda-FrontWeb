@@ -4,6 +4,7 @@ import InputBuscador from "../../components/InputBuscador/InputBuscador";
 import ComboToolbar from "../../components/ComboToolbar/ComboToolbar";
 import InputFecha from "../../components/InputFecha/InputFecha";
 import InputCombo from "../../components/InputCombo/InputCombo";
+import InputComboBusqueda from "../../components/InputComboBusqueda/InputComboBusqueda";
 
 import btnNew from "../../assets/btnNew.png";
 import btnPrint from "../../assets/btnPrint.png";
@@ -20,8 +21,9 @@ import btnMFiltros from "../../assets/btnMFiltros.png";
 import btnRefresh from "../../assets/btnRefresh.png";
 
 import {fechaAEntero} from "../../components/updFormatos"
+import { cargarEmpresas } from "../../components/services/empresasService";
 
-import { useState } from "react";
+import { useState,useEffect  } from "react";
 
 function FiltroAsientos({ onFiltrar }) 
 
@@ -30,14 +32,31 @@ function FiltroAsientos({ onFiltrar })
 // fecha default    
 const [fechaDesde,setFechaDesde] = useState(null);
 const [fechaHasta,setFechaHasta] = useState(null);
+// estado empresas
+const [empresas,setEmpresas] = useState([]);
+const [empresaSeleccionada,setEmpresaSeleccionada] = useState(null);
+const [cuenta,setCuenta] = useState("");
 
-console.log("fecha desde:", fechaDesde);
+useEffect(() => {
+    async function obtenerEmpresas() {
+        const datos = await cargarEmpresas();
+        setEmpresas(datos);
+
+        if (datos.length > 0) {
+            // setEmpresaSeleccionada(datos[0]);
+            setEmpresaSeleccionada(null);
+        }
+    }
+    obtenerEmpresas();
+}, []);
+
 
 async function filtrar()
 {
     onFiltrar({
         fechaDesde: fechaAEntero(fechaDesde),
-        fechaHasta: fechaAEntero(fechaHasta)
+        fechaHasta: fechaAEntero(fechaHasta),
+        empresaID: empresaSeleccionada?.empresaID
     });
 }
 
@@ -89,13 +108,19 @@ return (
             />
             <InputCombo
                 titulo="Empresa"
-                valor="Boyano SA"
+                valor={empresaSeleccionada?.empresaNombre || ""}
+                items={empresas}
+                campoID="empresaID"
+                campoDescripcion="empresaNombre"
+                onChange={setEmpresaSeleccionada}
                 icono={<img src={iconFlechaC} />}
             />
 
-            <InputBuscador
+            <InputComboBusqueda
                 titulo="Cuenta"
-                placeholder=""
+                valor={cuenta}
+                icono={<img src={iconFlechaC} />}
+                onChange={setCuenta}
             />
 
             <BotonToolbar

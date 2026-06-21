@@ -8,7 +8,7 @@
     align-items:center;
     justify-content:space-between;
     width:85px;
-    height:36px;
+    height:40px;
     padding-left:12px;
     padding-right:12px;
     border:1px solid #00AEEF;
@@ -16,18 +16,42 @@
     background:white;
 }
 
-.inputFechaTexto {
+/* .inputFechaTexto {
     display:flex;
     flex-direction:column;
     gap:2px;
+} */
+.inputFechaTexto {
+    position:relative;
+    flex:1;
 }
 
-.inputFechaTitulo {
+/* .inputFechaTitulo {
     font-family:'Inter', sans-serif;
     font-size:9px;
     font-weight:500;
     color:#00AEEF;
     line-height:1;
+} */
+.inputFechaTitulo {
+    position:absolute;
+    left:0;
+    top:50%;
+    transform:translateY(-50%);
+
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    font-weight:500;
+    color:#00AEEF;
+
+    pointer-events:none;
+}
+
+.inputFechaTexto.conValor .inputFechaTitulo,
+.inputFecha:focus-within .inputFechaTitulo {
+    top:-6px;
+    transform:none;
+    font-size:9px;
 }
 
 .inputFechaInput {
