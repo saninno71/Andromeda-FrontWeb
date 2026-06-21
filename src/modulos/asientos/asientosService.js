@@ -1,6 +1,6 @@
 import {API_URL} from "../../config/AndromedaFrontConfig.js";
 
-export async function cargarAsientos(fechaDesde, fechaHasta,empresaID)
+export async function cargarAsientos(fechaDesde, fechaHasta,empresaID,cuentaID)
 {
     try
     {
@@ -15,6 +15,9 @@ export async function cargarAsientos(fechaDesde, fechaHasta,empresaID)
 
         if (empresaID)
            filtro.empresaID = `${empresaID}`;
+
+        if (cuentaID)
+           filtro.cuentaID = cuentaID;
 
 console.log("Filtros mandado:", filtro);
 

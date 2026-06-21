@@ -51,7 +51,8 @@ function asientos()
         const data = await cargarAsientos(
             filtros.fechaDesde,
             filtros.fechaHasta,
-            filtros.empresaID
+            filtros.empresaID,
+            filtros.cuentaID
         );
         // console.timeEnd("api");
         // console.time("setDataGrid");

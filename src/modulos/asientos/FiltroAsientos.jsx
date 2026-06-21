@@ -22,6 +22,7 @@ import btnRefresh from "../../assets/btnRefresh.png";
 
 import {fechaAEntero} from "../../components/updFormatos"
 import { cargarEmpresas } from "../../components/services/empresasService";
+import { cargarCuentas } from "../../components/services/cuentasService";
 
 import { useState,useEffect  } from "react";
 
@@ -36,6 +37,8 @@ const [fechaHasta,setFechaHasta] = useState(null);
 const [empresas,setEmpresas] = useState([]);
 const [empresaSeleccionada,setEmpresaSeleccionada] = useState(null);
 const [cuenta,setCuenta] = useState("");
+const [cuentaKey,setCuentaKey] = useState(null);
+const [cuentas,setCuentas] = useState([]);
 
 useEffect(() => {
     async function obtenerEmpresas() {
@@ -50,13 +53,35 @@ useEffect(() => {
     obtenerEmpresas();
 }, []);
 
+useEffect(() => {
+    async function obtenerCuentas() {
+        if (cuenta.length < 2) {
+            setCuentas([]);
+            return;
+        }
+
+        const datos = await cargarCuentas(
+            cuenta,
+            empresaSeleccionada?.empresaID
+        );
+        setCuentas(datos);
+    }
+
+    const timeoutBusqueda = setTimeout(() => {
+        obtenerCuentas();
+    }, 500);
+
+    return () => clearTimeout(timeoutBusqueda);
+}, [cuenta,empresaSeleccionada]);
+
 
 async function filtrar()
 {
     onFiltrar({
         fechaDesde: fechaAEntero(fechaDesde),
         fechaHasta: fechaAEntero(fechaHasta),
-        empresaID: empresaSeleccionada?.empresaID
+        empresaID: empresaSeleccionada?.empresaID,
+        cuentaID: cuentaKey
     });
 }
 
@@ -119,8 +144,16 @@ return (
             <InputComboBusqueda
                 titulo="Cuenta"
                 valor={cuenta}
+                items={cuentas}
+                campoID="cuentaID"
+                campoCodigo="cuentaCodigo"
+                campoDescripcion="cuentaNombre"
                 icono={<img src={iconFlechaC} />}
                 onChange={setCuenta}
+                onSeleccionar={(item) => {
+                    setCuentaKey(item.cuentaID);
+                    setCuenta(`${item.cuentaCodigo} - ${item.cuentaNombre}`);
+                }}
             />
 
             <BotonToolbar

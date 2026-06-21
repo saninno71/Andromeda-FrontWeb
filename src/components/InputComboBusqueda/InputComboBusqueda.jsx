@@ -5,11 +5,21 @@ import { useState } from "react";
 function InputComboBusqueda({
     titulo,
     valor,
+    items = [],
+    campoID,
+    campoCodigo,
+    campoDescripcion,
     icono,
-    onChange
+    onChange,
+    onSeleccionar
 }) {
 
     const [tieneFoco,setTieneFoco] = useState(false);
+    const mostrarLista = tieneFoco;
+
+    function obtenerTextoItem(item) {
+        return `${item[campoCodigo]} - ${item[campoDescripcion]}`;
+    }
 
     return (
 
@@ -32,7 +42,7 @@ function InputComboBusqueda({
                     value={valor}
                     onChange={(e) => onChange(e.target.value)}
                     onFocus={() => setTieneFoco(true)}
-                    onBlur={() => setTieneFoco(false)}
+                    onBlur={() => setTimeout(() => setTieneFoco(false), 150)}
                 />
 
                 <div className="inputComboBusquedaIcono">
@@ -40,6 +50,39 @@ function InputComboBusqueda({
                 </div>
 
             </div>
+
+            {mostrarLista && (
+
+                <div className="inputComboBusquedaLista">
+
+                    {items.length > 0 ? (
+
+                        items.map((item) => (
+
+                            <div
+                                key={item[campoID]}
+                                className="inputComboBusquedaItem"
+                                onMouseDown={() => {
+                                    onSeleccionar(item);
+                                    setTieneFoco(false);
+                                }}
+                            >
+                                {obtenerTextoItem(item)}
+                            </div>
+
+                        ))
+
+                    ) : (
+
+                        <div className="inputComboBusquedaItem inputComboBusquedaItemVacio">
+                            Sin Resultados
+                        </div>
+
+                    )}
+
+                </div>
+
+            )}
 
         </div>
 

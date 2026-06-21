@@ -57,7 +57,7 @@
 } */
 .inputComboBusquedaTituloActivo {
     font-size:9px;
-    top:6px;
+    top:5px;
 }
 
 
@@ -80,4 +80,40 @@
     width:12px;
     height:12px;
     object-fit:contain;
+}
+
+.inputComboBusquedaLista {
+    position:absolute;
+    top:40px;
+    left:0;
+    width:100%;
+    background:white;
+    border:1px solid #00AEEF;
+    border-radius:8px;
+    overflow:hidden;
+    z-index:1000;
+    box-shadow:0 4px 8px rgba(0,0,0,0.10);
+}
+
+.inputComboBusquedaItem {
+    padding:8px 12px;
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    color:#6D6D6D;
+    cursor:pointer;
+    transition:background-color 0.15s ease;
+}
+
+.inputComboBusquedaItem:hover {
+    background:#00AEEF;
+    color:white;
+}
+
+.inputComboBusquedaItemVacio {
+    cursor:default;
+}
+
+.inputComboBusquedaItemVacio:hover {
+    background:white;
+    color:#6D6D6D;
 }

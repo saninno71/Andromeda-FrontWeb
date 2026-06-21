@@ -47,6 +47,11 @@
     gap:12px;
 }
 
+.filtroAsientos .inputCombo,
+.filtroAsientos .inputComboBusqueda {
+    width:300px;
+}
+
 .fila3FiltrosActivos {
     display:flex;
     flex-wrap:wrap;
