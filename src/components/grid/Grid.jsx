@@ -7,9 +7,59 @@ import icon6 from "../../assets/icon6G.png";
 
 import "./grid.css";
 import { useState,useRef,useEffect,useMemo} from "react";
+import {
+    DndContext,
+    closestCenter
+} from "@dnd-kit/core";
+import {
+    SortableContext,
+    horizontalListSortingStrategy,
+    useSortable,
+    arrayMove
+} from "@dnd-kit/sortable";
+import {CSS} from "@dnd-kit/utilities";
 
 import {toggleOrdenamiento,ordenarDatos,obtenerOrdenColumna,obtenerFlechaOrden,obtenerOrdenamientoDefault} from "./gridOrdenamiento";
 import {formatearValor} from "../updFormatos";
+
+function HeaderColumnaOrdenable({
+    columna,
+    estilo,
+    clase,
+    onOrdenar,
+    children
+}) {
+
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({
+        id: columna.campo
+    });
+
+    return (
+        <th
+            ref={setNodeRef}
+            className={`${clase} ${isDragging ? "thArrastrando" : ""}`}
+            key={columna.campo}
+            style={{
+                ...estilo,
+                transform: CSS.Transform.toString(transform),
+                transition
+            }}
+            onDoubleClick={() => onOrdenar(columna.campo)}
+            {...attributes}
+            {...listeners}
+        >
+            {children}
+        </th>
+    );
+
+}
 
 function Grid({columnasVisibles,dataGrid,mostrarCheck,cargando}) {
 
@@ -43,6 +93,39 @@ function Grid({columnasVisibles,dataGrid,mostrarCheck,cargando}) {
             columnasVisibles
         )
     );
+
+    const [columnasOrdenadas,setColumnasOrdenadas] =
+    useState(columnasVisibles);
+
+    useEffect(() => {
+
+        setColumnasOrdenadas(columnasActuales => {
+
+            const camposActuales =
+                columnasActuales.map(columna => columna.campo);
+
+            const camposNuevos =
+                columnasVisibles.map(columna => columna.campo);
+
+            const mismosCampos =
+                camposActuales.length === camposNuevos.length &&
+                camposActuales.every(campo =>
+                    camposNuevos.includes(campo)
+                );
+
+            if (mismosCampos) {
+                return columnasActuales.map(columnaActual =>
+                    columnasVisibles.find(
+                        columna => columna.campo === columnaActual.campo
+                    )
+                );
+            }
+
+            return columnasVisibles;
+
+        });
+
+    }, [columnasVisibles]);
 
     //logica para adminsitar la seleccion de la fila y visualizacion del menu flotante
     function seleccionarFila(fila,e)
@@ -100,6 +183,40 @@ function Grid({columnasVisibles,dataGrid,mostrarCheck,cargando}) {
     setOrdenamiento(prev =>
             toggleOrdenamiento(prev,campo)
         );
+    }
+
+    function manejarFinArrastreColumnas(event) {
+
+        const {active,over} = event;
+
+        if (!over || active.id === over.id) {
+            return;
+        }
+
+        setColumnasOrdenadas(columnasActuales => {
+
+            const indiceOrigen =
+                columnasActuales.findIndex(
+                    columna => columna.campo === active.id
+                );
+
+            const indiceDestino =
+                columnasActuales.findIndex(
+                    columna => columna.campo === over.id
+                );
+
+            if (indiceOrigen === -1 || indiceDestino === -1) {
+                return columnasActuales;
+            }
+
+            return arrayMove(
+                columnasActuales,
+                indiceOrigen,
+                indiceDestino
+            );
+
+        });
+
     }
 
     const dataOrdenada = useMemo(() => {
@@ -164,7 +281,7 @@ function Grid({columnasVisibles,dataGrid,mostrarCheck,cargando}) {
 
 
     const columnasParaMostrar =
-        columnasVisibles.filter(
+        columnasOrdenadas.filter(
             columna => columna.visible !== false
         );
 
@@ -546,45 +663,56 @@ useEffect(() =>
             ref={refGrillaHeader}
         >
 
-            <table>
-                <thead>
-                    <tr>
-                    {mostrarCheck && (
-                        <th style={{
-                            width: ANCHO_COLUMNA_CHECK + "px",
-                            minWidth: ANCHO_COLUMNA_CHECK + "px",
-                            maxWidth: ANCHO_COLUMNA_CHECK + "px"
-                            }}
-                        >
-                            <input
-                                type="checkbox"
-                                ref={refCheckTodos}
-                                onChange={cambiarCheckTodos}
-                                checked={estanTodasSeleccionadas}
-                            />
-                        </th>
-                    )}
+            <DndContext
+                collisionDetection={closestCenter}
+                onDragEnd={manejarFinArrastreColumnas}
+            >
+                <SortableContext
+                    items={columnasParaMostrar.map(columna => columna.campo)}
+                    strategy={horizontalListSortingStrategy}
+                >
+                    <table>
+                        <thead>
+                            <tr>
+                            {mostrarCheck && (
+                                <th style={{
+                                    width: ANCHO_COLUMNA_CHECK + "px",
+                                    minWidth: ANCHO_COLUMNA_CHECK + "px",
+                                    maxWidth: ANCHO_COLUMNA_CHECK + "px"
+                                    }}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        ref={refCheckTodos}
+                                        onChange={cambiarCheckTodos}
+                                        checked={estanTodasSeleccionadas}
+                                    />
+                                </th>
+                            )}
 
-                    {
-                    columnasParaMostrar.map(
-                    columna => (
-                        <th
-                            className={obtenerClaseHeader(columna.campo)}
-                            key={columna.campo}
-                            style={estiloColumna(columna)}
-                            onDoubleClick={() => manejarOrden(columna.campo) }
-                        >
-                            <span className="contenidoCelda">
-                                {columna.titulo}
-                                {renderOrdenColumna(columna.campo)}
-                            </span>
-                        </th>
-                    ))
-                    }
+                            {
+                            columnasParaMostrar.map(
+                            columna => (
+                                <HeaderColumnaOrdenable
+                                    clase={obtenerClaseHeader(columna.campo)}
+                                    columna={columna}
+                                    key={columna.campo}
+                                    estilo={estiloColumna(columna)}
+                                    onOrdenar={manejarOrden}
+                                >
+                                    <span className="contenidoCelda">
+                                        {columna.titulo}
+                                        {renderOrdenColumna(columna.campo)}
+                                    </span>
+                                </HeaderColumnaOrdenable>
+                            ))
+                            }
 
-                    </tr>
-                </thead>
-            </table>
+                            </tr>
+                        </thead>
+                    </table>
+                </SortableContext>
+            </DndContext>
 
         </div>
 
@@ -794,18 +922,18 @@ useEffect(() =>
                 <table>
                     <tbody>
                         <tr>
-                            <td
-                                style={{
-                                    width: anchoColumnasAntesDeSuma() + "px",
-                                    minWidth: anchoColumnasAntesDeSuma() + "px",
-                                    maxWidth: anchoColumnasAntesDeSuma() + "px"
-                                }}
-                            ></td>
+                            {mostrarCheck && (
+                                <td
+                                    style={{
+                                        width: ANCHO_COLUMNA_CHECK + "px",
+                                        minWidth: ANCHO_COLUMNA_CHECK + "px",
+                                        maxWidth: ANCHO_COLUMNA_CHECK + "px"
+                                    }}
+                                ></td>
+                            )}
 
                             {
-                                columnasParaMostrar
-                                .slice(indicePrimeraColumnaSuma)
-                                .map(columna => {
+                                columnasParaMostrar.map(columna => {
 
                                     const total =
                                         totalesGrid.find(
@@ -819,10 +947,14 @@ useEffect(() =>
                                         >
                                             {
                                                 columna.suma === true
-                                                    ? formatearValor(
-                                                        total?.total,
-                                                        columna.formato,
-                                                        columna.mascara
+                                                    ? (
+                                                        <span className="contenidoCelda">
+                                                            {formatearValor(
+                                                                total?.total,
+                                                                columna.formato,
+                                                                columna.mascara
+                                                            )}
+                                                        </span>
                                                     )
                                                     : ""
                                             }

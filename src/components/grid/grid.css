@@ -241,6 +241,19 @@ tbody td {
     color:white;
 }
 
+thead th {
+    cursor:grab;
+}
+
+thead th:active {
+    cursor:grabbing;
+}
+
+.thArrastrando {
+    opacity:0.75;
+    z-index:50;
+}
+
 .filaMenuActiva {
     outline:2px solid #00AEEF;
     outline-offset:-2px;
