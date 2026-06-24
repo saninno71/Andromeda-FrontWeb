@@ -71,7 +71,7 @@
 
     right:0;
 
-    width:150px;
+    width:190px;
 
     background:white;
 
@@ -187,4 +187,28 @@
     font-weight:500;
 
     color:#00AEEF;
+}
+
+.comboToolbarVistasLista {
+    display:flex;
+    flex-direction:column;
+    border:1px solid #00AEEF;
+    border-radius:6px;
+    overflow:hidden;
+    background:white;
+}
+
+.comboToolbarVistaItem {
+    padding:7px 10px;
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    font-weight:500;
+    color:#00AEEF;
+    cursor:pointer;
+}
+
+.comboToolbarVistaItem:hover,
+.comboToolbarVistaItemActivo {
+    background:#00AEEF;
+    color:white;
 }

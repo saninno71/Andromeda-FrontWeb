@@ -11,14 +11,25 @@ import iconGuardarGrilla from "../../assets/iconGuardarGrilla.png";
 function ComboToolbar({
     icono,
     flecha,
-    onClick
+    onAmpliarTexto,
+    onReducirTexto,
+    onGuardarGrilla,
+    onGuardarComoNueva,
+    vistas = [],
+    vistaActualID,
+    onSeleccionarVista
 })
 
 {
 
     //variable de estado para asignar el estado de abierto/cerrado y forzar el renderizado
     const [abierto,setAbierto] = useState(false);
+    const [abiertoVistas,setAbiertoVistas] = useState(false);
+    const [mensajeGuardado,setMensajeGuardado] = useState("");
     const refCombo = useRef();
+
+    const vistaActual =
+        vistas.find(vista => vista.id === vistaActualID);
 
     useEffect(() => {
 
@@ -49,6 +60,16 @@ function clickFuera(evento)
 
 },[]);
 
+function mostrarMensajeGuardado(mensaje) {
+
+    setMensajeGuardado(mensaje);
+
+    setTimeout(() => {
+        setMensajeGuardado("");
+    }, 1500);
+
+}
+
 return (
 
     <div className="comboToolbarContenedor" ref={refCombo}>
@@ -77,7 +98,10 @@ return (
 
                 <div className="comboToolbarPopup">
 
-                    <div className="comboToolbarItem">
+                    <div
+                        className="comboToolbarItem"
+                        onClick={() => onAmpliarTexto?.()}
+                    >
                         <div className="comboToolbarItemIcono">
                             <img src={iconAmpliarTexto} />
                         </div>
@@ -87,7 +111,10 @@ return (
                         </div>
                     </div>
 
-                    <div className="comboToolbarItem">
+                    <div
+                        className="comboToolbarItem"
+                        onClick={() => onReducirTexto?.()}
+                    >
                         <div className="comboToolbarItemIcono">
                             <img src={iconReducirTexto} />
                         </div>
@@ -97,13 +124,38 @@ return (
                         </div>
                     </div>
 
-                    <div className="comboToolbarItem">
+                    <div
+                        className="comboToolbarItem"
+                        onClick={() => {
+                            onGuardarGrilla?.();
+                            mostrarMensajeGuardado("Grilla guardada");
+                        }}
+                    >
                         <div className="comboToolbarItemIcono">
                             <img src={iconGuardarGrilla} />
                         </div>
 
                         <div className="comboToolbarItemTexto">
-                            Guardar grilla
+                            {
+                                mensajeGuardado ||
+                                "Guardar grilla"
+                            }
+                        </div>
+                    </div>
+
+                    <div
+                        className="comboToolbarItem"
+                        onClick={() => {
+                            onGuardarComoNueva?.();
+                            mostrarMensajeGuardado("Nueva grilla guardada");
+                        }}
+                    >
+                        <div className="comboToolbarItemIcono">
+                            <img src={iconGuardarGrilla} />
+                        </div>
+
+                        <div className="comboToolbarItemTexto">
+                            Guardar como nueva
                         </div>
                     </div>
 
@@ -118,11 +170,14 @@ return (
 
                         </div>
 
-                        <div className="comboToolbarSubcombo">
+                        <div
+                            className="comboToolbarSubcombo"
+                            onClick={() => setAbiertoVistas(!abiertoVistas)}
+                        >
 
                             <div className="comboToolbarSubcomboTexto">
 
-                                Grilla 1
+                                {vistaActual?.nombre || "Default"}
 
                             </div>
 
@@ -133,6 +188,33 @@ return (
                             </div>
 
                         </div>
+
+                        {abiertoVistas && (
+
+                            <div className="comboToolbarVistasLista">
+
+                                {vistas.map(vista => (
+
+                                    <div
+                                        key={vista.id}
+                                        className={`comboToolbarVistaItem ${
+                                            vista.id === vistaActualID
+                                                ? "comboToolbarVistaItemActivo"
+                                                : ""
+                                        }`}
+                                        onClick={() => {
+                                            onSeleccionarVista?.(vista.id);
+                                            setAbiertoVistas(false);
+                                        }}
+                                    >
+                                        {vista.nombre}
+                                    </div>
+
+                                ))}
+
+                            </div>
+
+                        )}
 
                     </div>
 

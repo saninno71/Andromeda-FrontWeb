@@ -9,7 +9,10 @@ import "./grid.css";
 import { useState,useRef,useEffect,useMemo} from "react";
 import {
     DndContext,
-    closestCenter
+    closestCenter,
+    PointerSensor,
+    useSensor,
+    useSensors
 } from "@dnd-kit/core";
 import {
     SortableContext,
@@ -26,7 +29,10 @@ function HeaderColumnaOrdenable({
     columna,
     estilo,
     clase,
+    esDestino,
     onOrdenar,
+    onIniciarResize,
+    onAlternarAncho,
     children
 }) {
 
@@ -44,26 +50,76 @@ function HeaderColumnaOrdenable({
     return (
         <th
             ref={setNodeRef}
-            className={`${clase} ${isDragging ? "thArrastrando" : ""}`}
+            className={`
+                ${clase}
+                ${isDragging ? "thArrastrando" : ""}
+                ${esDestino ? "thDestinoArrastre" : ""}
+            `}
             key={columna.campo}
             style={{
                 ...estilo,
+                position:"relative",
                 transform: CSS.Transform.toString(transform),
                 transition
+            }}
+            onClick={(e) => {
+                if (!e.ctrlKey) {
+                    return;
+                }
+
+                e.preventDefault();
+                e.stopPropagation();
+                onAlternarAncho(columna);
             }}
             onDoubleClick={() => onOrdenar(columna.campo)}
             {...attributes}
             {...listeners}
         >
             {children}
+            <div
+                className="resizeColumnaHandle"
+                onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onIniciarResize(columna,e);
+                }}
+                onDoubleClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }}
+            ></div>
         </th>
     );
 
 }
 
-function Grid({columnasVisibles,dataGrid,mostrarCheck,cargando}) {
+function Grid({
+    columnasVisibles,
+    dataGrid,
+    mostrarCheck,
+    cargando,
+    tamanoFuente = 13,
+    layoutColumnas = null,
+    layoutVersion = 0,
+    onLayoutChange
+}) {
 
      const ANCHO_COLUMNA_CHECK = 20;
+     const ANCHO_MINIMO_COLUMNA = 12;
+     const ANCHO_SCROLL_VERTICAL = 8;
+     const ANCHO_ESPACIO_FINAL = 40;
+     const estiloEspacioFinal = {
+        width: ANCHO_ESPACIO_FINAL + "px",
+        minWidth: ANCHO_ESPACIO_FINAL + "px",
+        maxWidth: ANCHO_ESPACIO_FINAL + "px"
+     };
+     const sensoresColumnas = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 6
+            }
+        })
+     );
 
     // ----------------------------------------------------------------------
     // VARIABLES DE ESTADO PARA FORZAR RENDERIZADOS y VARIABLES DE REFERENCIA
@@ -71,6 +127,7 @@ function Grid({columnasVisibles,dataGrid,mostrarCheck,cargando}) {
     
     //coleccion de KEYs seleccionadas por checks
     const [keysSeleccionadas, setKeysSeleccionadas] = useState([]);
+    const [keyAnclaSeleccion,setKeyAnclaSeleccion] = useState(null);
     const refCheckTodos = useRef();
     const [totalesGrid,setTotalesGrid] = useState([]);
    
@@ -94,8 +151,60 @@ function Grid({columnasVisibles,dataGrid,mostrarCheck,cargando}) {
         )
     );
 
+    // Orden visual editable: drag y resize sin modificar la definición base.
     const [columnasOrdenadas,setColumnasOrdenadas] =
     useState(columnasVisibles);
+    const [columnaDestino,setColumnaDestino] = useState(null);
+
+    function aplicarLayoutColumnas(layout) {
+
+        if (!layout) {
+            return columnasVisibles;
+        }
+
+        const columnasPorCampo =
+            new Map(
+                columnasVisibles.map(columna => [
+                    columna.campo,
+                    columna
+                ])
+            );
+
+        const columnasLayout =
+            layout
+            .map(columnaLayout => {
+                const columnaBase =
+                    columnasPorCampo.get(columnaLayout.campo);
+
+                if (!columnaBase) {
+                    return null;
+                }
+
+                return {
+                    ...columnaBase,
+                    ancho:
+                        columnaLayout.ancho ??
+                        columnaBase.ancho
+                };
+            })
+            .filter(Boolean);
+
+        const camposLayout =
+            new Set(
+                columnasLayout.map(columna => columna.campo)
+            );
+
+        const columnasNuevas =
+            columnasVisibles.filter(
+                columna => !camposLayout.has(columna.campo)
+            );
+
+        return [
+            ...columnasLayout,
+            ...columnasNuevas
+        ];
+
+    }
 
     useEffect(() => {
 
@@ -114,11 +223,7 @@ function Grid({columnasVisibles,dataGrid,mostrarCheck,cargando}) {
                 );
 
             if (mismosCampos) {
-                return columnasActuales.map(columnaActual =>
-                    columnasVisibles.find(
-                        columna => columna.campo === columnaActual.campo
-                    )
-                );
+                return columnasActuales;
             }
 
             return columnasVisibles;
@@ -126,6 +231,29 @@ function Grid({columnasVisibles,dataGrid,mostrarCheck,cargando}) {
         });
 
     }, [columnasVisibles]);
+
+    useEffect(() => {
+
+        setColumnasOrdenadas(
+            aplicarLayoutColumnas(layoutColumnas)
+        );
+
+    }, [layoutVersion]);
+
+    useEffect(() => {
+
+        if (!onLayoutChange) {
+            return;
+        }
+
+        onLayoutChange(
+            columnasOrdenadas.map(columna => ({
+                campo:columna.campo,
+                ancho:columna.ancho
+            }))
+        );
+
+    }, [columnasOrdenadas,onLayoutChange]);
 
     //logica para adminsitar la seleccion de la fila y visualizacion del menu flotante
     function seleccionarFila(fila,e)
@@ -188,6 +316,7 @@ function Grid({columnasVisibles,dataGrid,mostrarCheck,cargando}) {
     function manejarFinArrastreColumnas(event) {
 
         const {active,over} = event;
+        setColumnaDestino(null);
 
         if (!over || active.id === over.id) {
             return;
@@ -216,6 +345,111 @@ function Grid({columnasVisibles,dataGrid,mostrarCheck,cargando}) {
             );
 
         });
+
+    }
+
+    function manejarArrastreSobreColumnas(event) {
+
+        const {active,over} = event;
+
+        if (!over || active.id === over.id) {
+            setColumnaDestino(null);
+            return;
+        }
+
+        setColumnaDestino(over.id);
+
+    }
+
+    function manejarCancelarArrastreColumnas() {
+
+        setColumnaDestino(null);
+
+    }
+
+    // Resize manual de columnas sobre la copia visual interna.
+    function iniciarResizeColumna(columna,e) {
+
+        const xInicial = e.clientX;
+        const anchoInicial = columna.ancho;
+
+        function manejarMovimiento(event) {
+
+            const nuevoAncho =
+                Math.max(
+                    ANCHO_MINIMO_COLUMNA,
+                    anchoInicial + event.clientX - xInicial
+                );
+
+            setColumnasOrdenadas(columnasActuales =>
+                columnasActuales.map(columnaActual =>
+                    columnaActual.campo === columna.campo
+                        ? {
+                            ...columnaActual,
+                            ancho:nuevoAncho
+                        }
+                        : columnaActual
+                )
+            );
+
+        }
+
+        function terminarResize() {
+
+            window.removeEventListener(
+                "pointermove",
+                manejarMovimiento
+            );
+
+            window.removeEventListener(
+                "pointerup",
+                terminarResize
+            );
+
+        }
+
+        window.addEventListener(
+            "pointermove",
+            manejarMovimiento
+        );
+
+        window.addEventListener(
+            "pointerup",
+            terminarResize
+        );
+
+    }
+
+    function alternarAnchoColumna(columna) {
+
+        const columnaDefault =
+            columnasVisibles.find(
+                columnaVisible =>
+                    columnaVisible.campo === columna.campo
+            );
+
+        if (!columnaDefault) {
+            return;
+        }
+
+        const estaEnDefault =
+            Math.abs(columna.ancho - columnaDefault.ancho) <= 1;
+
+        const nuevoAncho =
+            estaEnDefault
+                ? ANCHO_MINIMO_COLUMNA
+                : columnaDefault.ancho;
+
+        setColumnasOrdenadas(columnasActuales =>
+            columnasActuales.map(columnaActual =>
+                columnaActual.campo === columna.campo
+                    ? {
+                        ...columnaActual,
+                        ancho:nuevoAncho
+                    }
+                    : columnaActual
+            )
+        );
 
     }
 
@@ -317,8 +551,48 @@ function Grid({columnasVisibles,dataGrid,mostrarCheck,cargando}) {
         }
     }
 
-    //ACTUALIZA COLECCION DE FILAS CHECKEADAS
-    function cambiarCheckFila(keyFila) {
+    // Shift + click selecciona rangos sobre el orden visible actual.
+    function cambiarCheckFila(keyFila,e) {
+
+        if (e.shiftKey && keyAnclaSeleccion) {
+
+            const indiceAncla =
+                todasLasKeys.findIndex(
+                    key => key === keyAnclaSeleccion
+                );
+
+            const indiceFila =
+                todasLasKeys.findIndex(
+                    key => key === keyFila
+                );
+
+            if (indiceAncla !== -1 && indiceFila !== -1) {
+
+                const inicio =
+                    Math.min(indiceAncla,indiceFila);
+
+                const fin =
+                    Math.max(indiceAncla,indiceFila);
+
+                const keysRango =
+                    todasLasKeys.slice(inicio,fin + 1);
+
+                setKeysSeleccionadas(function(keysAnteriores) {
+
+                    return Array.from(
+                        new Set([
+                            ...keysAnteriores,
+                            ...keysRango
+                        ])
+                    );
+
+                });
+
+                return;
+
+            }
+
+        }
 
         setKeysSeleccionadas(function(keysAnteriores) {
 
@@ -335,6 +609,8 @@ function Grid({columnasVisibles,dataGrid,mostrarCheck,cargando}) {
             }
 
         });
+
+        setKeyAnclaSeleccion(keyFila);
     }
 
     //CALCULO DE TOTALES
@@ -438,6 +714,7 @@ useEffect(() =>
 {
     setMostrarMenuFila(false);
     setKeysSeleccionadas([]);
+    setKeyAnclaSeleccion(null);
     setFilaSeleccionada(null);
 },
 [dataGrid]);
@@ -634,7 +911,13 @@ useEffect(() =>
 
     return (
 
-    <div className="grilla">
+    <div
+        className="grilla"
+        style={{
+            "--grid-font-size": tamanoFuente + "px",
+            "--grid-total-font-size": (tamanoFuente + 1) + "px"
+        }}
+    >
         {cargando && (
             <div className="grillaLoadingOverlay">
                 <div className="loader"></div>
@@ -665,7 +948,10 @@ useEffect(() =>
 
             <DndContext
                 collisionDetection={closestCenter}
+                sensors={sensoresColumnas}
+                onDragOver={manejarArrastreSobreColumnas}
                 onDragEnd={manejarFinArrastreColumnas}
+                onDragCancel={manejarCancelarArrastreColumnas}
             >
                 <SortableContext
                     items={columnasParaMostrar.map(columna => columna.campo)}
@@ -696,9 +982,12 @@ useEffect(() =>
                                 <HeaderColumnaOrdenable
                                     clase={obtenerClaseHeader(columna.campo)}
                                     columna={columna}
+                                    esDestino={columnaDestino === columna.campo}
                                     key={columna.campo}
                                     estilo={estiloColumna(columna)}
                                     onOrdenar={manejarOrden}
+                                    onIniciarResize={iniciarResizeColumna}
+                                    onAlternarAncho={alternarAnchoColumna}
                                 >
                                     <span className="contenidoCelda">
                                         {columna.titulo}
@@ -707,6 +996,8 @@ useEffect(() =>
                                 </HeaderColumnaOrdenable>
                             ))
                             }
+
+                            <th style={estiloEspacioFinal}></th>
 
                             </tr>
                         </thead>
@@ -757,8 +1048,11 @@ useEffect(() =>
                                     <input
                                         type="checkbox"
                                         checked={keysSeleccionadas.includes(keyFila)}
-                                        onChange={() =>cambiarCheckFila(keyFila)}
-                                        onClick={(e) => e.stopPropagation()}
+                                        onChange={() => {}}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            cambiarCheckFila(keyFila,e);
+                                        }}
                                     />
                                 </td>
                             )}
@@ -785,6 +1079,8 @@ useEffect(() =>
                                 </td>
                             ))
                             }
+
+                            <td style={estiloEspacioFinal}></td>
 
                         </tr>
                         );
@@ -910,7 +1206,7 @@ useEffect(() =>
             <div
                 className="grillaScrollContenido"
                 style={{
-                    width: anchoTotalGrilla()  -5 + "px"
+                    width: anchoTotalGrilla() + ANCHO_ESPACIO_FINAL + ANCHO_SCROLL_VERTICAL + "px"
                 }}
             ></div>
         </div>
@@ -962,6 +1258,8 @@ useEffect(() =>
                                     );
                                 })
                             }
+
+                            <td style={estiloEspacioFinal}></td>
                         </tr>
                     </tbody>
                 </table>

@@ -26,7 +26,16 @@ import { cargarCuentas } from "../../components/services/cuentasService";
 
 import { useState,useEffect  } from "react";
 
-function FiltroAsientos({ onFiltrar }) 
+function FiltroAsientos({
+    onFiltrar,
+    onAmpliarTextoGrid,
+    onReducirTextoGrid,
+    onGuardarGrilla,
+    onGuardarComoNueva,
+    vistasGrid,
+    vistaGridActualID,
+    onSeleccionarVistaGrid
+}) 
 
 {
 
@@ -109,6 +118,13 @@ return (
                 {/* <BotonToolbar texto="" icono={<img src={btnHelp} />}/> */}
                 <ComboToolbar icono={<img src={iconGrilla} />}
                                 flecha={<img src={iconFlechaC} />}
+                                onAmpliarTexto={onAmpliarTextoGrid}
+                                onReducirTexto={onReducirTextoGrid}
+                                onGuardarGrilla={onGuardarGrilla}
+                                onGuardarComoNueva={onGuardarComoNueva}
+                                vistas={vistasGrid}
+                                vistaActualID={vistaGridActualID}
+                                onSeleccionarVista={onSeleccionarVistaGrid}
                 />
             </div>
 

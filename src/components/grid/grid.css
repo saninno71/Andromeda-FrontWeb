@@ -6,6 +6,8 @@
     min-height:0;
     overflow:hidden;
     position:relative;
+    --grid-font-size:13px;
+    --grid-total-font-size:14px;
 }
 
 .grillaHeader {
@@ -147,9 +149,12 @@ input[type="checkbox"]:checked::after {
 .grillaTotales td {
     background:#662D91;
     font-family:"Inter", sans-serif;
-    font-size:14px;
+    font-size:var(--grid-total-font-size);
     font-weight:700;
     color:#FFFFFF;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
 }
 
 .totalRegistrosFlotante {
@@ -160,7 +165,7 @@ input[type="checkbox"]:checked::after {
     background: #662D91;
     color: #FFFFFF;
     font-family: "Inter", sans-serif;
-    font-size: 14px;
+    font-size: var(--grid-total-font-size);
     font-weight: 700;
     padding-left: 8px;
     padding-right: 8px;
@@ -181,8 +186,11 @@ thead th {
     background: #00AEEF;
     color: white;
     font-family: "Inter", sans-serif;
-    font-size: 13px;
+    font-size: var(--grid-font-size);
     font-weight: 700;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
 
     /*que no seleccione texto para que no aparezca menu del navegador*/
      user-select:none;
@@ -195,9 +203,10 @@ table {
 
 tbody td {
     font-family: "Inter", sans-serif;
-    font-size: 13px;
+    font-size: var(--grid-font-size);
     font-weight: 400;
     color: #5E5E5E;
+    overflow:hidden;
 }
 
 .fila-par {
@@ -234,6 +243,9 @@ tbody td {
     max-width: 100%;
     padding-left: 6px;
     padding-right: 6px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
 }
 
 .thOrdenado {
@@ -250,8 +262,55 @@ thead th:active {
 }
 
 .thArrastrando {
-    opacity:0.75;
+    opacity:0.9;
     z-index:50;
+    box-shadow:0 4px 10px rgba(0,0,0,0.20);
+    outline:2px solid #FFFFFF;
+    outline-offset:-2px;
+}
+
+.thDestinoArrastre {
+    box-shadow:inset 3px 0 0 #FFFFFF;
+}
+
+/* Handle de resize visible al acercarse al borde del header. */
+.resizeColumnaHandle {
+    position:absolute;
+    top:0;
+    right:0;
+    width:10px;
+    height:100%;
+    cursor:col-resize;
+    opacity:0;
+    z-index:80;
+}
+
+.resizeColumnaHandle::before,
+.resizeColumnaHandle::after {
+    content:"";
+    position:absolute;
+    top:50%;
+    width:3px;
+    height:3px;
+    border-radius:50%;
+    background:#FFFFFF;
+    transform:translate(-50%,-50%);
+    box-shadow:
+        0 -5px 0 #FFFFFF,
+        0 5px 0 #FFFFFF;
+}
+
+.resizeColumnaHandle::before {
+    left:35%;
+}
+
+.resizeColumnaHandle::after {
+    left:65%;
+}
+
+thead th:hover .resizeColumnaHandle,
+.resizeColumnaHandle:hover {
+    opacity:1;
 }
 
 .filaMenuActiva {
@@ -304,6 +363,10 @@ thead th:active {
 
 .menuFila.filaSeleccionada {
     background:#007AA7;
+}
+
+.menuFila.filaSeleccionada img {
+    filter:brightness(0) invert(1);
 }
 
 .menuFila span {
