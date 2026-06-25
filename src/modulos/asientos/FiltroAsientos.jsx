@@ -34,7 +34,9 @@ function FiltroAsientos({
     onGuardarComoNueva,
     vistasGrid,
     vistaGridActualID,
-    onSeleccionarVistaGrid
+    onSeleccionarVistaGrid,
+    busquedaGrid,
+    onBusquedaGridChange
 }) 
 
 {
@@ -94,6 +96,29 @@ async function filtrar()
     });
 }
 
+function formatearFechaChip(fecha) {
+
+    if (!fecha) {
+        return "";
+    }
+
+    return fecha.toLocaleDateString(
+        "es-AR",
+        {
+            day:"2-digit",
+            month:"2-digit",
+            year:"2-digit"
+        }
+    );
+
+}
+
+const hayFiltrosActivos =
+    fechaDesde ||
+    fechaHasta ||
+    empresaSeleccionada ||
+    cuentaKey;
+
 
 return (
 
@@ -111,8 +136,10 @@ return (
         <div className="toolbarDerecha">
                 <InputBuscador
                     titulo="Buscar"
-                    placeholder="Boyano monalli"
+                    value={busquedaGrid}
+                    placeholder=""
                     icono={<img src={btnLupa} />}
+                    onChange={(e) => onBusquedaGridChange(e.target.value)}
                 />
                 <BotonToolbar texto="" icono={<img src={btnHelp} />}/>
                 {/* <BotonToolbar texto="" icono={<img src={btnHelp} />}/> */}
@@ -200,9 +227,75 @@ return (
 
     </div>
 
+    {hayFiltrosActivos && (
+
     <div className="fila3FiltrosActivos">
 
+        {fechaDesde && (
+            <div className="filtroActivoChip">
+                <span className="filtroActivoChipLabel">
+                    Fecha desde
+                </span>
+                <span className="filtroActivoChipValor">
+                    {formatearFechaChip(fechaDesde)}
+                </span>
+                <button onClick={() => setFechaDesde(null)}>
+                    x
+                </button>
+            </div>
+        )}
+
+        {fechaHasta && (
+            <div className="filtroActivoChip">
+                <span className="filtroActivoChipLabel">
+                    Fecha hasta
+                </span>
+                <span className="filtroActivoChipValor">
+                    {formatearFechaChip(fechaHasta)}
+                </span>
+                <button onClick={() => setFechaHasta(null)}>
+                    x
+                </button>
+            </div>
+        )}
+
+        {empresaSeleccionada && (
+            <div className="filtroActivoChip">
+                <span className="filtroActivoChipLabel">
+                    Empresa
+                </span>
+                <span className="filtroActivoChipValor">
+                    {empresaSeleccionada.empresaNombre}
+                </span>
+                <button onClick={() => setEmpresaSeleccionada(null)}>
+                    x
+                </button>
+            </div>
+        )}
+
+        {cuentaKey && (
+            <div className="filtroActivoChip">
+                <span className="filtroActivoChipLabel">
+                    Cuenta
+                </span>
+                <span className="filtroActivoChipValor">
+                    {cuenta}
+                </span>
+                <button
+                    onClick={() => {
+                        setCuenta("");
+                        setCuentaKey(null);
+                        setCuentas([]);
+                    }}
+                >
+                    x
+                </button>
+            </div>
+        )}
+
     </div>
+
+    )}
 
 </div>
 

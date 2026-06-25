@@ -24,7 +24,7 @@ function InputBuscador({
 
                     <input
                         className="inputBuscadorInput"
-                        value={value}
+                        value={value || ""}
                         placeholder={placeholder}
                         onChange={onChange}
                     />

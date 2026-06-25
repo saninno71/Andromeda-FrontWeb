@@ -1,8 +1,9 @@
 .filtroAsientos {
     display:flex;
     flex-direction:column;
-    gap:16px;
-    /* padding:16px; */
+    gap:10px;
+    padding-top:0px;
+    padding-bottom:12px;
     background:#DCECF3;
     /* border:2px solid red; */
 }
@@ -17,6 +18,7 @@
     align-items:center;
     gap:12px;
     margin-left: 10px;
+    margin-top:10px;
 }
 
 .toolbarDerecha {
@@ -29,6 +31,11 @@
     padding-left:12px;
     padding-bottom:12px;
     background:#F6F6F6;
+}
+
+.fila1Toolbar .botonToolbar,
+.fila1Toolbar .comboToolbar {
+    border-radius:4px;
 }
 
 .fila2Busqueda {
@@ -52,8 +59,68 @@
     width:300px;
 }
 
+.filtroAsientos .inputFechaContenido,
+.filtroAsientos .inputCombo,
+.filtroAsientos .inputComboBusqueda {
+    border:none;
+    border-radius:2px;
+}
+
+.filtroAsientos .botonToolbar.primario {
+    border-radius:2px;
+}
+
 .fila3FiltrosActivos {
     display:flex;
     flex-wrap:wrap;
     gap:10px;
+    margin-left:10px;
+    margin-right:10px;
+    margin-top:1px;
+    margin-bottom:1px;
+}
+
+.filtroActivoChip {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    max-width:320px;
+    height:28px;
+    padding-left:14px;
+    padding-right:8px;
+    border:1px solid #00AEEF;
+    border-radius:16px;
+    background:white;
+    color:#00AEEF;
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    font-weight:500;
+}
+
+.filtroActivoChipLabel,
+.filtroActivoChipValor {
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.filtroActivoChipLabel {
+    flex-shrink:0;
+}
+
+.filtroActivoChipValor {
+    font-weight:700;
+    min-width:0;
+}
+
+.filtroActivoChip button {
+    border:none;
+    background:transparent;
+    color:#00AEEF;
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+    font-weight:700;
+    line-height:1;
+    cursor:pointer;
+    padding:0;
 }

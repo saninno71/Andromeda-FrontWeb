@@ -56,15 +56,18 @@ function Login({onResult}) {
                     <label>Usuario</label>
                   </div>
 
-                  <input 
-                    className="input-password" 
-                    type="password" 
-                    placeholder="Contraseña" 
-                    value={pass}
-                    onChange={(e) => {setPass(e.target.value);
-                                      setError("");}
-                    }
-                  />
+                  <div className="input-group floating">
+                    <input 
+                      className="input-password" 
+                      type="password" 
+                      placeholder=" " 
+                      value={pass}
+                      onChange={(e) => {setPass(e.target.value);
+                                        setError("");}
+                      }
+                    />
+                    <label>Contraseña</label>
+                  </div>
 
                   <div className="login-actions">
                     <a href="#" className="forgot">¿Olvidaste tu contraseña?</a>

@@ -125,6 +125,7 @@ function asientos()
         useState(vistaInicial?.columns || null);
     const [layoutVersion,setLayoutVersion] = useState(0);
     const [layoutActualGrid,setLayoutActualGrid] = useState([]);
+    const [busquedaGrid,setBusquedaGrid] = useState("");
 
     const vistasGrid = [
         VISTA_DEFAULT,
@@ -317,6 +318,8 @@ function asientos()
                 vistasGrid={vistasGrid}
                 vistaGridActualID={vistaGridActualID}
                 onSeleccionarVistaGrid={seleccionarVistaGrid}
+                busquedaGrid={busquedaGrid}
+                onBusquedaGridChange={setBusquedaGrid}
             />
         </div>
 
@@ -330,6 +333,7 @@ function asientos()
                     layoutColumnas={layoutColumnasGrid}
                     layoutVersion={layoutVersion}
                     onLayoutChange={actualizarLayoutActualGrid}
+                    textoBusqueda={busquedaGrid}
             />
         </div>
 

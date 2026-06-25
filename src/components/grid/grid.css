@@ -289,23 +289,23 @@ thead th:active {
 .resizeColumnaHandle::after {
     content:"";
     position:absolute;
-    top:50%;
-    width:3px;
-    height:3px;
+    top:47%;
+    width:2px;
+    height:2px;
     border-radius:50%;
     background:#FFFFFF;
     transform:translate(-50%,-50%);
     box-shadow:
-        0 -5px 0 #FFFFFF,
-        0 5px 0 #FFFFFF;
+        0 -4px 0 #FFFFFF,
+        0 4px 0 #FFFFFF;
 }
 
 .resizeColumnaHandle::before {
-    left:35%;
+    left:40%;
 }
 
 .resizeColumnaHandle::after {
-    left:65%;
+    left:60%;
 }
 
 thead th:hover .resizeColumnaHandle,

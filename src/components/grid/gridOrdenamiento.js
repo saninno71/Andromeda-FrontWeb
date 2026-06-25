@@ -130,16 +130,14 @@ export function obtenerFlechaOrden(
     direccion
 )
 {
-        if(direccion === "asc")
+    if(direccion === "asc")
     {
-        // return "↑";
-        return "⬆";
+        return "▴";
     }
 
     if(direccion === "desc")
     {
-        // return "↓";
-        return "⬇";
+        return "▾";
     }
 
     return "";

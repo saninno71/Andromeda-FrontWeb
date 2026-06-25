@@ -23,6 +23,7 @@ import {
 import {CSS} from "@dnd-kit/utilities";
 
 import {toggleOrdenamiento,ordenarDatos,obtenerOrdenColumna,obtenerFlechaOrden,obtenerOrdenamientoDefault} from "./gridOrdenamiento";
+import {filtrarDatosPorTexto} from "./gridBusqueda";
 import {formatearValor} from "../updFormatos";
 
 function HeaderColumnaOrdenable({
@@ -101,7 +102,8 @@ function Grid({
     tamanoFuente = 13,
     layoutColumnas = null,
     layoutVersion = 0,
-    onLayoutChange
+    onLayoutChange,
+    textoBusqueda = ""
 }) {
 
      const ANCHO_COLUMNA_CHECK = 20;
@@ -453,16 +455,35 @@ function Grid({
 
     }
 
+    const columnasParaMostrar =
+        columnasOrdenadas.filter(
+            columna => columna.visible !== false
+        );
+
+    const dataFiltrada = useMemo(() => {
+
+        return filtrarDatosPorTexto(
+            dataGrid,
+            columnasParaMostrar,
+            textoBusqueda
+        );
+
+    }, [
+        dataGrid,
+        columnasParaMostrar,
+        textoBusqueda
+    ]);
+
     const dataOrdenada = useMemo(() => {
 
         return ordenarDatos(
-            dataGrid,
+            dataFiltrada,
             ordenamiento,
             columnasVisibles
         );
 
     }, [
-        dataGrid,
+        dataFiltrada,
         ordenamiento
     ]);
         
@@ -512,12 +533,6 @@ function Grid({
 
     /*FIN ORDENAMIENTO DE FILAS*/
 
-
-
-    const columnasParaMostrar =
-        columnasOrdenadas.filter(
-            columna => columna.visible !== false
-        );
 
     const columnasParaKey =
         columnasVisibles.filter(
@@ -620,8 +635,8 @@ function Grid({
 
             keysSeleccionadas.length === 0
 
-            ? dataGrid
-            : dataGrid.filter(fila => {
+            ? dataFiltrada
+            : dataFiltrada.filter(fila => {
 
                 const keyFila =
                     armarKeyFila(fila);
@@ -686,9 +701,9 @@ function Grid({
 
     },
     [
-        dataGrid,
+        dataFiltrada,
         keysSeleccionadas,
-        columnasVisibles
+        columnasOrdenadas
     ]);
 
     //SOLO APLICA PRIMER RENDERIZADO
@@ -717,7 +732,7 @@ useEffect(() =>
     setKeyAnclaSeleccion(null);
     setFilaSeleccionada(null);
 },
-[dataGrid]);
+[dataGrid,textoBusqueda]);
 
 
     //ALINEACION DE COLUMNA Y ANCHO SEGUN PARAMETRIA
@@ -733,12 +748,13 @@ useEffect(() =>
     }
 
     const cantidadTotalRegistros = dataGrid.length;
+    const cantidadRegistrosFiltrados = dataFiltrada.length;
     const cantidadSeleccionados = keysSeleccionadas.length;
 
     const cantidadMostrada =
         cantidadSeleccionados > 0
         ? cantidadSeleccionados
-        : cantidadTotalRegistros;
+        : cantidadRegistrosFiltrados;
 
     const textoCantidadRegistros =
         cantidadMostrada + " de " + cantidadTotalRegistros + " registros";
@@ -927,7 +943,7 @@ useEffect(() =>
             </div>
         )}
 
-        {!cargando && dataGrid.length === 0 && (
+        {!cargando && dataOrdenada.length === 0 && (
             <div className="grillaSinDatosOverlay">
 
                 <div className="grillaSinDatosIcono">
