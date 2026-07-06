@@ -11,14 +11,54 @@ function InputComboBusqueda({
     campoDescripcion,
     icono,
     onChange,
-    onSeleccionar
+    onSeleccionar,
+    tabIndex
 }) {
 
     const [tieneFoco,setTieneFoco] = useState(false);
+    const [indiceActivo,setIndiceActivo] = useState(0);
     const mostrarLista = tieneFoco;
 
     function obtenerTextoItem(item) {
         return `${item[campoCodigo]} - ${item[campoDescripcion]}`;
+    }
+
+    function seleccionarItem(item) {
+
+        onSeleccionar(item);
+        setTieneFoco(false);
+
+    }
+
+    function manejarTecla(evento) {
+
+        if (evento.key === "ArrowDown") {
+            evento.preventDefault();
+            setTieneFoco(true);
+            setIndiceActivo(indice =>
+                Math.min(items.length - 1,indice + 1)
+            );
+            return;
+        }
+
+        if (evento.key === "ArrowUp") {
+            evento.preventDefault();
+            setTieneFoco(true);
+            setIndiceActivo(indice =>
+                Math.max(0,indice - 1)
+            );
+            return;
+        }
+
+        if (evento.key === "Enter" && items[indiceActivo]) {
+            seleccionarItem(items[indiceActivo]);
+            return;
+        }
+
+        if (evento.key === "Escape") {
+            setTieneFoco(false);
+        }
+
     }
 
     return (
@@ -40,9 +80,17 @@ function InputComboBusqueda({
                 <input
                     className="inputComboBusquedaInput"
                     value={valor}
-                    onChange={(e) => onChange(e.target.value)}
-                    onFocus={() => setTieneFoco(true)}
+                    onChange={(e) => {
+                        setIndiceActivo(0);
+                        onChange(e.target.value);
+                    }}
+                    onFocus={() => {
+                        setIndiceActivo(0);
+                        setTieneFoco(true);
+                    }}
                     onBlur={() => setTimeout(() => setTieneFoco(false), 150)}
+                    onKeyDown={manejarTecla}
+                    tabIndex={tabIndex}
                 />
 
                 <div className="inputComboBusquedaIcono">
@@ -57,14 +105,18 @@ function InputComboBusqueda({
 
                     {items.length > 0 ? (
 
-                        items.map((item) => (
+                        items.map((item,indice) => (
 
                             <div
                                 key={item[campoID]}
-                                className="inputComboBusquedaItem"
+                                className={`inputComboBusquedaItem ${
+                                    indice === indiceActivo
+                                        ? "inputComboBusquedaItemActivo"
+                                        : ""
+                                }`}
+                                onMouseEnter={() => setIndiceActivo(indice)}
                                 onMouseDown={() => {
-                                    onSeleccionar(item);
-                                    setTieneFoco(false);
+                                    seleccionarItem(item);
                                 }}
                             >
                                 {obtenerTextoItem(item)}

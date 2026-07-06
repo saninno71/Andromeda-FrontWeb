@@ -1,9 +1,19 @@
 import {API_URL} from "../../config/AndromedaFrontConfig.js";
 
-export async function cargarAsientos(fechaDesde, fechaHasta,empresaID,cuentaID)
+export async function cargarAsientos(filtrosConsulta = {})
 {
     try
     {
+        const {
+            fechaDesde,
+            fechaHasta,
+            empresaID,
+            cuentaID,
+            detalle,
+            numeroDesde,
+            numeroHasta,
+            numeraTipoID
+        } = filtrosConsulta;
 
         const filtro = {};
 
@@ -19,7 +29,17 @@ export async function cargarAsientos(fechaDesde, fechaHasta,empresaID,cuentaID)
         if (cuentaID)
            filtro.cuentaID = cuentaID;
 
-console.log("Filtros mandado:", filtro);
+        if (detalle)
+           filtro.detalle = detalle;
+
+        if (numeroDesde)
+           filtro.numeroDesde = numeroDesde;
+
+        if (numeroHasta)
+           filtro.numeroHasta = numeroHasta;
+
+        if (numeraTipoID)
+           filtro.numeraTipoID = numeraTipoID;
 
         const response = await fetch(
             `${API_URL}/api/contabilidad/asientos/odata/CstctbAsientos`,

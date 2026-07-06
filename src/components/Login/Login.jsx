@@ -25,6 +25,14 @@ function Login({onResult}) {
     console.log("Todo OK");
     onResult("success",user);
   };
+
+  const handleKeyDown = (e) => {
+    if (e.key !== "Enter") {
+      return;
+    }
+
+    handleSubmit(e);
+  };
     
   return (
     
@@ -39,7 +47,11 @@ function Login({onResult}) {
               <div className="login-content">
                 <h2 className="welcome">¡Bienvenido!</h2> 
 
-                <form className="login-form" onSubmit={handleSubmit}>
+                <form
+                  className="login-form"
+                  onSubmit={handleSubmit}
+                  onKeyDown={handleKeyDown}
+                >
 
                   <div className="input-group floating">
                     <input 

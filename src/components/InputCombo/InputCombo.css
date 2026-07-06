@@ -112,6 +112,11 @@
     color:white;
 }
 
+.inputComboItemActivo {
+    background:#00AEEF;
+    color:white;
+}
+
 .inputComboTituloActivo {
     font-size:9px;
     top:-5px;

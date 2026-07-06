@@ -113,6 +113,11 @@
     color:white;
 }
 
+.inputComboBusquedaItemActivo {
+    background:#00AEEF;
+    color:white;
+}
+
 .inputComboBusquedaItemVacio {
     cursor:default;
 }

@@ -1,4 +1,4 @@
-import "./asientos.css";
+import "./ctbAsientosBQD.css";
 
 import { useCallback,useEffect,useState } from "react";
 //componente grilla
@@ -9,6 +9,8 @@ import FiltroAsientos from "./FiltroAsientos";
 /*importa la info total*/
 // import dataGrid  from "./simul/Asientos.json";
 import { cargarAsientos } from "./asientosService";
+import { primerDiaMesActual } from "../../components/fechas";
+import { fechaAEntero } from "../../components/updFormatos";
 
 const GRID_STORAGE_KEY = "andromeda:grid:asientos:views";
 const VISTA_DEFAULT = {
@@ -59,7 +61,7 @@ function guardarVistas(vistas,vistaActualID) {
 
 }
 
-function asientos()
+function CtbAsientosBQD()
 
 {
 
@@ -133,7 +135,7 @@ function asientos()
     ];
 
     const filtrosDefault = {
-        fechaDesde: 0,
+        fechaDesde: fechaAEntero(primerDiaMesActual()),
         fechaHasta: 0,
         empresaID: 0
     };
@@ -145,12 +147,7 @@ function asientos()
         // console.time("total");
         setCargando(true);
         // console.time("api");
-        const data = await cargarAsientos(
-            filtros.fechaDesde,
-            filtros.fechaHasta,
-            filtros.empresaID,
-            filtros.cuentaID
-        );
+        const data = await cargarAsientos(filtros);
         // console.timeEnd("api");
         // console.time("setDataGrid");
         setDataGrid(data);
@@ -343,4 +340,4 @@ function asientos()
 
 }
 
-export default asientos;
+export default CtbAsientosBQD;

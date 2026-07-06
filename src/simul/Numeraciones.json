@@ -1,0 +1,18 @@
+[
+    {
+        "numeraTipoID": 1,
+        "descripcion": "As."
+    },
+    {
+        "numeraTipoID": 81,
+        "descripcion": "As"
+    },
+    {
+        "numeraTipoID": 82,
+        "descripcion": "AJ"
+    },
+    {
+        "numeraTipoID": 83,
+        "descripcion": "CI"
+    }
+]

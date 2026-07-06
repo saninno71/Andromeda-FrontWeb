@@ -5,7 +5,8 @@ function InputBuscador({
     value,
     placeholder,
     icono,
-    onChange
+    onChange,
+    tabIndex
 })
 
 {
@@ -27,6 +28,7 @@ function InputBuscador({
                         value={value || ""}
                         placeholder={placeholder}
                         onChange={onChange}
+                        tabIndex={tabIndex}
                     />
 
                 </div>

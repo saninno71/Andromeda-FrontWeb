@@ -3,6 +3,7 @@ import Login from "../components/Login/Login";
 import SeleccionAmbiente from "../components/Login/SeleccionDB";
 import PantallaPrincipal from "../components/PantallaPrincipal/PantallaPrincipal";
 import RecuperarPassword from "../components/Login/RecuperarPassword";
+import { configurarApiPorLogin } from "../config/AndromedaFrontConfig";
 
 function App() {
   const [step, setStep] = useState("login");
@@ -15,7 +16,10 @@ function App() {
           onResult={(result,loginUser) => {
             //  console.log("STATE USER:", loginUser);
             setUser(loginUser);
-            if (result === "success") setStep("ambiente");
+            if (result === "success") {
+              configurarApiPorLogin(loginUser);
+              setStep("ambiente");
+            }
             if (result === "forgot") setStep("forgot");
           }}
         />

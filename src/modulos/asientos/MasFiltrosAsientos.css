@@ -1,0 +1,176 @@
+.masFiltrosOverlay {
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:stretch;
+    justify-content:flex-end;
+    padding-top:0;
+    padding-right:0;
+    padding-bottom:0;
+    padding-left:340px;
+    box-sizing:border-box;
+    background:rgba(0,0,0,0.14);
+    z-index:100000;
+}
+
+.masFiltrosModal {
+    display:flex;
+    flex-direction:column;
+    width:100%;
+    height:100%;
+    background:#F6F6F6;
+    box-shadow:
+        -9px 0 18px rgba(0,0,0,0.24),
+        9px 0 18px rgba(0,0,0,0.16);
+}
+
+.masFiltrosHeader {
+    display:flex;
+    align-items:center;
+    height:54px;
+    flex-shrink:0;
+    padding-left:12px;
+    padding-right:10px;
+    background:white;
+}
+
+.masFiltrosCerrar {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:22px;
+    height:22px;
+    border:1px solid #662D91;
+    border-radius:50%;
+    background:white;
+    color:#662D91;
+    font-family:'Inter', sans-serif;
+    font-size:15px;
+    font-weight:600;
+    line-height:1;
+    cursor:pointer;
+}
+
+.masFiltrosTitulo {
+    margin-left:18px;
+    color:#662D91;
+    font-family:'Inter', sans-serif;
+    font-size:16px;
+    font-weight:700;
+}
+
+.masFiltrosCuerpo {
+    flex:1;
+    min-height:0;
+    padding-top:30px;
+    padding-left:54px;
+    overflow:auto;
+}
+
+.masFiltrosFormulario {
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    width:620px;
+}
+
+.masFiltrosFechas {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    width:288px;
+}
+
+.masFiltrosFormulario .inputFechaContenido,
+.masFiltrosFormulario .inputCombo,
+.masFiltrosFormulario .inputComboBusqueda,
+.masFiltrosFormulario .inputTexto {
+    height:40px;
+    border:1px solid #00AEEF;
+    border-radius:2px;
+    box-sizing:border-box;
+}
+
+.masFiltrosFormulario .inputFechaInput,
+.masFiltrosFormulario .inputComboValor,
+.masFiltrosFormulario .inputComboBusquedaInput,
+.masFiltrosFormulario .inputTextoInput {
+    transform:translateY(3px);
+}
+
+.masFiltrosFormulario .inputFechaContenido {
+    width:140px;
+}
+
+.masFiltrosControl300 .inputComboContainer,
+.masFiltrosControl300 .inputCombo,
+.masFiltrosControl300 .inputComboBusqueda {
+    width:300px;
+}
+
+.masFiltrosControl580 .inputComboContainer,
+.masFiltrosControl580 .inputCombo,
+.masFiltrosFormulario .masFiltrosInputAncho {
+    width:580px;
+}
+
+.masFiltrosFormulario .masFiltrosInput280 {
+    width:280px;
+}
+
+.masFiltrosCampoConBoton .inputComboBusqueda {
+    width:280px;
+}
+
+.masFiltrosFormulario .masFiltrosInput300 {
+    width:300px;
+}
+
+.masFiltrosSeccionTitulo {
+    margin-top:10px;
+    color:#00AEEF;
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    font-weight:700;
+}
+
+.masFiltrosSeccionComprobante {
+    margin-top:18px;
+}
+
+.masFiltrosCampoConBoton {
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.botonToolbar.masFiltrosBotonMas {
+    width:40px;
+    height:40px;
+    padding-left:0;
+    padding-right:0;
+    justify-content:center;
+    border-radius:2px;
+    font-size:24px;
+    font-weight:400;
+}
+
+.botonToolbar.masFiltrosBotonMas .botonToolbarTexto {
+    line-height:1;
+}
+
+.masFiltrosFooter {
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    height:68px;
+    flex-shrink:0;
+    padding-right:24px;
+    background:white;
+}
+
+.masFiltrosFooter .botonToolbar.primario {
+    width:86px;
+    justify-content:center;
+    border-radius:3px;
+}

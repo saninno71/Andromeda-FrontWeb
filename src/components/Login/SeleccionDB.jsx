@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useEffect,useState } from "react";
 
-import { validateLogin } from "./authService.js";
 import './Login.css'
 import logo from "../../assets/logo-andromeda.png";
 
@@ -11,6 +10,32 @@ const [base, setBase] = useState("");
 const handleSubmit = (e) => {
     e.preventDefault();
     onNext("app");
+  };
+
+useEffect(() => {
+    function manejarEnterGlobal(e) {
+      if (e.key !== "Enter") {
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      onNext("app");
+    }
+
+    document.addEventListener("keydown",manejarEnterGlobal,true);
+
+    return () => {
+      document.removeEventListener("keydown",manejarEnterGlobal,true);
+    };
+  }, [onNext]);
+
+const handleKeyDown = (e) => {
+    if (e.key !== "Enter") {
+      return;
+    }
+
+    handleSubmit(e);
   };
 
   return (
@@ -27,7 +52,11 @@ const handleSubmit = (e) => {
                 <h2 className="welcome">Seleccioná tu base de datos</h2> 
                 <h2 className="welcome-user">{user}</h2> 
 
-                <form className="login-form" onSubmit={handleSubmit}>
+                <form
+                  className="login-form"
+                  onSubmit={handleSubmit}
+                  onKeyDown={handleKeyDown}
+                >
 
                   <select
                     className="combo-bases"

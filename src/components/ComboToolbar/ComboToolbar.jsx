@@ -17,7 +17,8 @@ function ComboToolbar({
     onGuardarComoNueva,
     vistas = [],
     vistaActualID,
-    onSeleccionarVista
+    onSeleccionarVista,
+    tabIndex
 })
 
 {
@@ -77,6 +78,7 @@ return (
         <button
             className="comboToolbar"
             onClick={() => setAbierto(!abierto)}
+            tabIndex={tabIndex}
         >
 
             <div className="comboToolbarIcono">

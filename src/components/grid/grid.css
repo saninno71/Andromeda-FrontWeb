@@ -26,6 +26,11 @@
         #E3F4FB;
 }
 
+.grillaCeldaDatos:focus {
+    outline:2px solid #00AEEF;
+    outline-offset:-2px;
+}
+
 .grillaCentro {
     position:relative;
 

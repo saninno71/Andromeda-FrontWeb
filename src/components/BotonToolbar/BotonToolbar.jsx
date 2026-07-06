@@ -1,19 +1,28 @@
 import "./BotonToolbar.css";
 
-function BotonToolbar({
+import { forwardRef } from "react";
+
+const BotonToolbar = forwardRef(function BotonToolbar({
     texto,
     icono,
     onClick,
-    variante
-})
+    onKeyDown,
+    variante,
+    tabIndex,
+    className = ""
+},ref)
 
 {
 
     return (
 
         <button
-            className={`botonToolbar ${variante || ""}`}
+            type="button"
+            className={`botonToolbar ${variante || ""} ${className}`}
             onClick={onClick}
+            onKeyDown={onKeyDown}
+            tabIndex={tabIndex}
+            ref={ref}
         >
 
             {icono && (
@@ -36,6 +45,6 @@ function BotonToolbar({
 
     );
 
-}
+});
 
 export default BotonToolbar;

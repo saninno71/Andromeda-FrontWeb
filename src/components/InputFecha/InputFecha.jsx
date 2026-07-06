@@ -1,19 +1,42 @@
-import { useRef } from "react";
+import { forwardRef,useImperativeHandle,useRef } from "react";
 import "./InputFecha.css";
 import DatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
 
-function InputFecha({
+const InputFecha = forwardRef(function InputFecha({
     titulo,
     valor,
     placeholder,
     icono,
-    onChange
-})
+    onChange,
+    onEnter,
+    tabIndex
+},ref)
 
 {
     const datePickerRef = useRef(null);
+    const contenedorRef = useRef(null);
+
+    useImperativeHandle(ref,() => ({
+        focus() {
+            const input =
+                contenedorRef.current?.querySelector("input");
+
+            input?.focus();
+        },
+        focusSinAbrir() {
+            const input =
+                contenedorRef.current?.querySelector("input");
+
+            input?.focus();
+            datePickerRef.current?.setOpen(false);
+
+            window.setTimeout(() => {
+                datePickerRef.current?.setOpen(false);
+            },0);
+        }
+    }),[]);
 
     function manejarCambioManual(e) {
 
@@ -34,17 +57,34 @@ function InputFecha({
         e.target.value = valor;
     }
 
+    function manejarCambio(fecha) {
+
+        onChange(fecha);
+        datePickerRef.current?.setOpen(false);
+
+    }
+
+    function manejarTecla(e) {
+
+        if (e.key === "Enter") {
+            window.setTimeout(() => {
+                datePickerRef.current?.setOpen(false);
+                onEnter?.();
+            },0);
+        }
+
+    }
+
 
 
 
     return (
 
-        <div className="inputFecha">
+        <div className="inputFecha" ref={contenedorRef}>
 
             <div className="inputFechaContenido">
 
                 <div className={`inputFechaTexto ${valor ? "conValor" : ""}`}>
-                    {console.log("valor:", valor)}
 
                     <div className="inputFechaTitulo">
                         {titulo}
@@ -53,8 +93,9 @@ function InputFecha({
                     <DatePicker
                         ref={datePickerRef}
                         selected={valor}
-                        onChange={onChange}
+                        onChange={manejarCambio}
                         onChangeRaw={manejarCambioManual}
+                        onKeyDown={manejarTecla}
                         dateFormat="dd/MM/yyyy"
                         placeholderText={placeholder}
                         showMonthDropdown
@@ -62,6 +103,7 @@ function InputFecha({
                         dropdownMode="select"
                         popperPlacement="bottom-start"
                         className="inputFechaInput"
+                        tabIndex={tabIndex}
                     />
 
                 </div>
@@ -80,6 +122,6 @@ function InputFecha({
         </div>
 
     );
-}
+});
 
 export default InputFecha;
