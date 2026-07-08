@@ -8,7 +8,8 @@ function GridTotalesVista({
     totales,
     estiloColumna,
     estiloEspacioFinal,
-    textoCantidadRegistros
+    textoCantidadRegistros,
+    cargandoPaginas
 }) {
 
     return (
@@ -68,6 +69,12 @@ function GridTotalesVista({
             </div>
 
             <div className="totalRegistrosFlotante">
+                {cargandoPaginas && (
+                    <span
+                        className="gridSpinnerCarga"
+                        aria-label="Cargando registros"
+                    ></span>
+                )}
                 {textoCantidadRegistros}
             </div>
 

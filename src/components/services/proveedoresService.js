@@ -1,4 +1,5 @@
 import {API_URL} from "../../config/AndromedaFrontConfig.js";
+import { obtenerItemsOData } from "./odataResponse.js";
 
 export async function cargarProveedores(textoBusqueda, empresaID) {
 
@@ -28,9 +29,7 @@ export async function cargarProveedores(textoBusqueda, empresaID) {
         );
 
         const data = await response.json();
-        const proveedores = Array.isArray(data)
-            ? data
-            : data.value || [];
+        const proveedores = obtenerItemsOData(data);
 
         return proveedores.map((proveedor) => ({
             proveedorID: proveedor.id,

@@ -1,5 +1,5 @@
 import "./grid.css";
-import { useState,useRef,useEffect,useMemo} from "react";
+import { useState,useRef,useEffect,useMemo,useCallback} from "react";
 import {
     DndContext,
     closestCenter
@@ -22,6 +22,7 @@ import {crearScrollGrid} from "./gridScroll";
 import GridTotalesVista from "./GridTotalesVista";
 import GridMenuFila from "./GridMenuFila";
 import GridFila from "./GridFila";
+import {useGridVirtualizacion} from "./useGridVirtualizacion";
 import {
     obtenerClaseFilaGrid,
     obtenerClaseFilaMenu,
@@ -33,6 +34,9 @@ function Grid({
     dataGrid,
     mostrarCheck,
     cargando,
+    cargandoPaginas = false,
+    totalRegistrosRemotos = null,
+    enfoqueVersion = null,
     tamanoFuente = 13,
     layoutColumnas = null,
     layoutVersion = 0,
@@ -44,11 +48,11 @@ function Grid({
      const ANCHO_MINIMO_COLUMNA = 12;
      const ANCHO_SCROLL_VERTICAL = 8;
      const ANCHO_ESPACIO_FINAL = 40;
-     const estiloEspacioFinal = {
+     const estiloEspacioFinal = useMemo(() => ({
         width: ANCHO_ESPACIO_FINAL + "px",
         minWidth: ANCHO_ESPACIO_FINAL + "px",
         maxWidth: ANCHO_ESPACIO_FINAL + "px"
-     };
+     }), []);
 
     // ----------------------------------------------------------------------
     // VARIABLES DE ESTADO PARA FORZAR RENDERIZADOS y VARIABLES DE REFERENCIA
@@ -87,7 +91,7 @@ function Grid({
     });
 
     //logica para adminsitar la seleccion de la fila y visualizacion del menu flotante
-    function seleccionarFila(fila,e)
+    const seleccionarFila = useCallback(function seleccionarFila(fila,e)
     {
         if(filaSeleccionada === fila)
         {
@@ -113,10 +117,10 @@ function Grid({
 
         setFilaSeleccionada(fila);
         setMostrarMenuFila(true);
-    }
+    }, [filaSeleccionada]);
 
     //determina si es una fila seleccioanda
-    function obtenerClaseFila(
+    const obtenerClaseFila = useCallback(function obtenerClaseFila(
         fila
     )
     {
@@ -124,7 +128,7 @@ function Grid({
             fila,
             filaSeleccionada
         });
-    }
+    }, [filaSeleccionada]);
 
     // ----------------------------------------------------------------------
     /*INICIO ORDENAMIENTO DE FILAS*/
@@ -185,7 +189,8 @@ function Grid({
 
     }, [
         dataFiltrada,
-        ordenamiento
+        ordenamiento,
+        columnasVisibles
     ]);
         
     //visualizacion de columnas ordenadas
@@ -235,25 +240,31 @@ function Grid({
     /*FIN ORDENAMIENTO DE FILAS*/
 
 
-    const columnasParaKey =
+    const columnasParaKey = useMemo(() =>
         columnasVisibles.filter(
             columna => columna.key === true
-        );
+        ),
+        [columnasVisibles]
+    );
 
-    function armarKeyFila(fila) {
+    const armarKeyFila = useCallback(function armarKeyFila(fila) {
         return (
             columnasParaKey
             .map(columna => fila[columna.campo])
             .join("|")
         );
-    }
+    }, [columnasParaKey]);
 
-    const todasLasKeys = dataOrdenada.map(fila =>
-        armarKeyFila(fila)
+    const todasLasKeys = useMemo(() =>
+        dataOrdenada.map(fila =>
+            armarKeyFila(fila)
+        ),
+        [dataOrdenada,armarKeyFila]
     );
 
     const {
         keysSeleccionadas,
+        keysSeleccionadasSet,
         refCheckTodos,
         estanTodasSeleccionadas,
         cambiarCheckTodos,
@@ -268,12 +279,15 @@ function Grid({
             columnas:columnasParaMostrar,
             filas:dataFiltrada,
             keysSeleccionadas,
+            keysSeleccionadasSet,
             armarKeyFila
         }),
         [
             columnasParaMostrar,
             dataFiltrada,
-            keysSeleccionadas
+            keysSeleccionadas,
+            keysSeleccionadasSet,
+            armarKeyFila
         ]
     );
 
@@ -283,7 +297,13 @@ useEffect(() =>
     limpiarSeleccion();
     setFilaSeleccionada(null);
 },
-[dataGrid,textoBusqueda,limpiarSeleccion]);
+[
+    enfoqueVersion == null
+        ? dataGrid
+        : enfoqueVersion,
+    textoBusqueda,
+    limpiarSeleccion
+]);
 
 useEffect(() => {
 
@@ -295,8 +315,11 @@ useEffect(() => {
         refPrimeraCeldaDatos.current?.focus?.();
     },0);
 
-}, [dataGrid]);
-
+}, [
+    enfoqueVersion == null
+        ? dataGrid
+        : enfoqueVersion
+]);
 
     const estiloColumna = obtenerEstiloColumna;
 
@@ -304,22 +327,45 @@ useEffect(() => {
     const cantidadRegistrosFiltrados = dataFiltrada.length;
     const cantidadSeleccionados = keysSeleccionadas.length;
 
-    const cantidadMostrada =
-        cantidadSeleccionados > 0
-        ? cantidadSeleccionados
-        : cantidadRegistrosFiltrados;
+    const cantidadTotalDisponible =
+        totalRegistrosRemotos ?? cantidadTotalRegistros;
+
+    const segmentosCantidad = [];
+
+    if (cantidadSeleccionados > 0) {
+        segmentosCantidad.push(
+            cantidadSeleccionados + " seleccionados"
+        );
+    }
+
+    if (
+        textoBusqueda &&
+        cantidadSeleccionados === 0 &&
+        cantidadRegistrosFiltrados !== cantidadTotalRegistros
+    ) {
+        segmentosCantidad.push(
+            cantidadRegistrosFiltrados + " filtrados"
+        );
+    }
+
+    segmentosCantidad.push(
+        cantidadTotalRegistros +
+        " de " +
+        cantidadTotalDisponible +
+        " registros"
+    );
 
     const textoCantidadRegistros =
-        cantidadMostrada + " de " + cantidadTotalRegistros + " registros";
+        segmentosCantidad.join(" / ");
 
-    function claseFila(indiceFila, keyFila) {
+    const claseFila = useCallback(function claseFila(indiceFila, keyFila) {
 
         return obtenerClaseFilaGrid({
             indiceFila,
             keyFila,
-            keysSeleccionadas
+            keysSeleccionadasSet
         });
-    }
+    }, [keysSeleccionadasSet]);
 
     const {
         anchoContenidoScrollHorizontal,
@@ -358,6 +404,59 @@ useEffect(() => {
         sincronizarDesdeScrollHorizontal,
         sincronizarDesdeGrillaDatos
     });
+
+    const {
+        filasVirtuales,
+        altoTotal,
+        offsetY,
+        altoInferior,
+        actualizarScrollTop
+    } = useGridVirtualizacion({
+        filas:dataOrdenada,
+        refContenedor:refGrillaDatos
+    });
+
+    useEffect(() => {
+
+        if (refGrillaDatos.current) {
+            refGrillaDatos.current.scrollTop = 0;
+        }
+
+        if (refScrollVertical.current) {
+            refScrollVertical.current.scrollTop = 0;
+        }
+
+        actualizarScrollTop(0);
+
+    }, [
+        enfoqueVersion == null
+            ? dataGrid
+            : enfoqueVersion,
+        actualizarScrollTop
+    ]);
+
+    function manejarScrollGrillaDatos() {
+
+        actualizarScrollTop(
+            refGrillaDatos.current?.scrollTop ?? 0
+        );
+        sincronizarDesdeGrillaDatos();
+
+    }
+
+    function manejarScrollVertical() {
+
+        sincronizarDesdeScrollVertical();
+        actualizarScrollTop(
+            refScrollVertical.current?.scrollTop ?? 0
+        );
+
+    }
+
+    const cantidadColumnasTabla =
+        columnasParaMostrar.length +
+        (mostrarCheck ? 1 : 0) +
+        1;
 
     useEffect(() => {
 
@@ -482,7 +581,7 @@ useEffect(() => {
             <div
                 className="grillaDatos"
                 ref={refGrillaDatos}
-                onScroll={sincronizarDesdeGrillaDatos}
+                onScroll={manejarScrollGrillaDatos}
                 onWheel={manejarRuedaMouse}
                 onClick={(e) => {
                     if (e.target === e.currentTarget) {
@@ -493,11 +592,23 @@ useEffect(() => {
 
                 <table>
                     <tbody>
+                    {offsetY > 0 && (
+                        <tr className="grillaFilaEspaciadora">
+                            <td
+                                colSpan={cantidadColumnasTabla}
+                                style={{height:offsetY + "px"}}
+                            ></td>
+                        </tr>
+                    )}
                     {
-                    dataOrdenada.map(
-                    (fila,indiceFila) => {
+                    filasVirtuales.map(
+                    ({fila,indice:indiceFila}) => {
 
                         const keyFila = armarKeyFila(fila);
+                        const claseFilaActual =
+                            claseFila(indiceFila,keyFila);
+                        const checked =
+                            keysSeleccionadasSet.has(keyFila);
 
                         return (
                             <GridFila
@@ -505,12 +616,12 @@ useEffect(() => {
                                 fila={fila}
                                 indiceFila={indiceFila}
                                 keyFila={keyFila}
-                                claseFila={claseFila}
+                                claseFila={claseFilaActual}
                                 claseMenuFila={obtenerClaseFila(fila)}
                                 mostrarCheck={mostrarCheck}
                                 anchoColumnaCheck={ANCHO_COLUMNA_CHECK}
                                 columnas={columnasParaMostrar}
-                                keysSeleccionadas={keysSeleccionadas}
+                                checked={checked}
                                 cambiarCheckFila={cambiarCheckFila}
                                 seleccionarFila={seleccionarFila}
                                 refPrimeraCeldaDatos={refPrimeraCeldaDatos}
@@ -520,6 +631,14 @@ useEffect(() => {
                         );
                     })
                     }
+                    {altoInferior > 0 && (
+                        <tr className="grillaFilaEspaciadora">
+                            <td
+                                colSpan={cantidadColumnasTabla}
+                                style={{height:altoInferior + "px"}}
+                            ></td>
+                        </tr>
+                    )}
                     </tbody>
                 </table>
 
@@ -550,16 +669,13 @@ useEffect(() => {
             <div
                 className="grillaScrollVertical"
                 ref={refScrollVertical}
-                onScroll={sincronizarDesdeScrollVertical}
+                onScroll={manejarScrollVertical}
             >
 
                 <div
                     className="grillaScrollVerticalContenido"
                     style={{
-                        height:
-                            refGrillaDatos.current
-                            ? refGrillaDatos.current.scrollHeight + "px"
-                            : "0px"
+                        height:altoTotal + "px"
                     }}
                 ></div>
 
@@ -589,6 +705,7 @@ useEffect(() => {
             estiloColumna={estiloColumna}
             estiloEspacioFinal={estiloEspacioFinal}
             textoCantidadRegistros={textoCantidadRegistros}
+            cargandoPaginas={cargandoPaginas}
         />
 
     </div>

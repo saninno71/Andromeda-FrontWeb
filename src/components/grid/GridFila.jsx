@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { obtenerClaseTextoColumna } from "./gridEstilos";
 import { formatearValor } from "../updFormatos";
 
@@ -10,7 +11,7 @@ function GridFila({
     mostrarCheck,
     anchoColumnaCheck,
     columnas,
-    keysSeleccionadas,
+    checked,
     cambiarCheckFila,
     seleccionarFila,
     refPrimeraCeldaDatos,
@@ -21,7 +22,7 @@ function GridFila({
     return (
         <tr
             className={`
-                ${claseFila(indiceFila,keyFila)}
+                ${claseFila}
                 ${claseMenuFila}
             `}
             key={keyFila}
@@ -40,7 +41,7 @@ function GridFila({
                     <input
                         type="checkbox"
                         data-grid-check-row={indiceFila}
-                        checked={keysSeleccionadas.includes(keyFila)}
+                        checked={checked}
                         onChange={() => {}}
                         onClick={(e) => {
                             e.stopPropagation();
@@ -107,4 +108,4 @@ function GridFila({
 
 }
 
-export default GridFila;
+export default memo(GridFila);

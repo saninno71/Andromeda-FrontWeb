@@ -2,6 +2,7 @@ export function calcularTotalesGrid({
     columnas,
     filas,
     keysSeleccionadas,
+    keysSeleccionadasSet,
     armarKeyFila
 }) {
 
@@ -12,9 +13,7 @@ export function calcularTotalesGrid({
                 const keyFila =
                     armarKeyFila(fila);
 
-                return keysSeleccionadas.includes(
-                    keyFila
-                );
+                return keysSeleccionadasSet.has(keyFila);
             });
 
     return (

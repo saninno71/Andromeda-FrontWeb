@@ -22,10 +22,10 @@ export function obtenerClaseTextoColumna(columna) {
 export function obtenerClaseFilaGrid({
     indiceFila,
     keyFila,
-    keysSeleccionadas
+    keysSeleccionadasSet
 }) {
 
-    if (keysSeleccionadas.includes(keyFila)) {
+    if (keysSeleccionadasSet.has(keyFila)) {
         return "filaSeleccionada";
     }
 

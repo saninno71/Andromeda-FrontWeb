@@ -1,6 +1,6 @@
 import "./ctbAsientosBQD.css";
 
-import { useCallback,useEffect,useState } from "react";
+import { useCallback,useEffect,useRef,useState } from "react";
 //componente grilla
 import Grid from "../../components/grid/Grid";
 //componente filtros
@@ -13,12 +13,23 @@ import { primerDiaMesActual } from "../../components/fechas";
 import { fechaAEntero } from "../../components/updFormatos";
 
 const GRID_STORAGE_KEY = "andromeda:grid:asientos:views";
+const TAMANO_PAGINA_DEFAULT = 100;
+const TOPE_REGISTROS_DEFAULT = 1000;
+const PAUSA_ENTRE_PAGINAS_DEFAULT = 80;
 const VISTA_DEFAULT = {
     id:"default",
     nombre:"Default",
     esDefault:true
 };
 const TAMANO_FUENTE_DEFAULT = 13;
+
+function esperar(ms) {
+
+    return new Promise(resolve => {
+        window.setTimeout(resolve,ms);
+    });
+
+}
 
 function leerVistasGuardadas() {
 
@@ -61,7 +72,12 @@ function guardarVistas(vistas,vistaActualID) {
 
 }
 
-function CtbAsientosBQD()
+function CtbAsientosBQD({
+    tamanoPagina = TAMANO_PAGINA_DEFAULT,
+    topeRegistros = TOPE_REGISTROS_DEFAULT,
+    pausaEntrePaginas = PAUSA_ENTRE_PAGINAS_DEFAULT,
+    ejecutarConsultaInicial = false
+})
 
 {
 
@@ -112,6 +128,10 @@ function CtbAsientosBQD()
     const mostrarCheck=true;
     const [dataGrid,setDataGrid] = useState([]);
     const [cargando,setCargando] = useState(false);
+    const [cargandoPaginas,setCargandoPaginas] = useState(false);
+    const [totalRegistrosRemotos,setTotalRegistrosRemotos] = useState(null);
+    const [versionEnfoqueGrid,setVersionEnfoqueGrid] = useState(0);
+    const consultaActualRef = useRef(0);
     const datosVistasIniciales = leerVistasGuardadas();
     const [vistasGuardadas,setVistasGuardadas] =
         useState(datosVistasIniciales.vistas);
@@ -128,6 +148,7 @@ function CtbAsientosBQD()
     const [layoutVersion,setLayoutVersion] = useState(0);
     const [layoutActualGrid,setLayoutActualGrid] = useState([]);
     const [busquedaGrid,setBusquedaGrid] = useState("");
+    const consultaAbortRef = useRef(null);
 
     const vistasGrid = [
         VISTA_DEFAULT,
@@ -142,29 +163,117 @@ function CtbAsientosBQD()
 
     async function filtrarAsientos(filtros)
     {
+        const consultaID = consultaActualRef.current + 1;
+        consultaActualRef.current = consultaID;
+        consultaAbortRef.current?.abort();
+
+        const abortController = new AbortController();
+        consultaAbortRef.current = abortController;
+
         try
         {
         // console.time("total");
         setCargando(true);
+        setCargandoPaginas(false);
+        setTotalRegistrosRemotos(null);
+        setDataGrid([]);
         // console.time("api");
-        const data = await cargarAsientos(filtros);
+        const primeraPagina = await cargarAsientos(
+            filtros,
+            {
+                top:tamanoPagina,
+                skip:0,
+                incluirTotal:true,
+                signal:abortController.signal
+            }
+        );
+
+        if (consultaActualRef.current !== consultaID) {
+            return;
+        }
+
+        const totalRemoto =
+            primeraPagina.total ?? primeraPagina.items.length;
+
         // console.timeEnd("api");
         // console.time("setDataGrid");
-        setDataGrid(data);
+        setDataGrid(primeraPagina.items);
+        setTotalRegistrosRemotos(totalRemoto);
+        setVersionEnfoqueGrid(version => version + 1);
+        setCargando(false);
         // console.timeEnd("setDataGrid");
         // console.timeEnd("total");
+
+        const limiteCarga =
+            Math.min(
+                totalRemoto,
+                topeRegistros
+            );
+
+        let registrosCargados = primeraPagina.items.length;
+
+        if (registrosCargados >= limiteCarga) {
+            return;
+        }
+
+        setCargandoPaginas(true);
+
+        while (
+            registrosCargados < limiteCarga &&
+            consultaActualRef.current === consultaID
+        ) {
+            const pagina = await cargarAsientos(
+                filtros,
+                {
+                    top:Math.min(
+                        tamanoPagina,
+                        limiteCarga - registrosCargados
+                    ),
+                    skip:registrosCargados,
+                    incluirTotal:false,
+                    signal:abortController.signal
+                }
+            );
+
+            if (consultaActualRef.current !== consultaID) {
+                return;
+            }
+
+            if (pagina.items.length === 0) {
+                break;
+            }
+
+            registrosCargados += pagina.items.length;
+            setDataGrid(datosActuales => [
+                ...datosActuales,
+                ...pagina.items
+            ]);
+
+            await esperar(pausaEntrePaginas);
+        }
         }
         finally
         {
-            setCargando(false);
+            if (consultaActualRef.current === consultaID) {
+                setCargando(false);
+                setCargandoPaginas(false);
+                consultaAbortRef.current = null;
+            }
         }
     }
 
     useEffect(() => {
         // console.time("consulta");
-        filtrarAsientos(filtrosDefault);
+        if (ejecutarConsultaInicial) {
+            filtrarAsientos(filtrosDefault);
+        }
         // console.timeEnd("consulta");
-    },[]);
+        return () => {
+            consultaActualRef.current += 1;
+            consultaAbortRef.current?.abort();
+            consultaAbortRef.current = null;
+        };
+    },[ejecutarConsultaInicial]);
 
     function ampliarTextoGrid() {
         setTamanoFuenteGrid(tamanoActual =>
@@ -326,6 +435,9 @@ function CtbAsientosBQD()
                     dataGrid={dataGrid}
                     mostrarCheck={mostrarCheck}
                     cargando={cargando}
+                    cargandoPaginas={cargandoPaginas}
+                    totalRegistrosRemotos={totalRegistrosRemotos}
+                    enfoqueVersion={versionEnfoqueGrid}
                     tamanoFuente={tamanoFuenteGrid}
                     layoutColumnas={layoutColumnasGrid}
                     layoutVersion={layoutVersion}

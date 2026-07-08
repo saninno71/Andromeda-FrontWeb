@@ -1,4 +1,5 @@
 import {API_URL} from "../../config/AndromedaFrontConfig.js";
+import { obtenerItemsOData } from "./odataResponse.js";
 
 export async function cargarCuentas(textoBusqueda, empresaID) {
 
@@ -28,8 +29,9 @@ export async function cargarCuentas(textoBusqueda, empresaID) {
         );
 
         const data = await response.json();
+        const cuentas = obtenerItemsOData(data);
 
-        return data.map((cuenta) => ({
+        return cuentas.map((cuenta) => ({
             cuentaID: cuenta.id,
             cuentaCodigo: cuenta.codigo,
             cuentaNombre: cuenta.nombre

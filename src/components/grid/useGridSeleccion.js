@@ -1,20 +1,25 @@
-import { useCallback,useEffect,useRef,useState } from "react";
+import { useCallback,useEffect,useMemo,useRef,useState } from "react";
 
 export function useGridSeleccion({
     todasLasKeys
 }) {
 
     const [keysSeleccionadas,setKeysSeleccionadas] = useState([]);
-    const [keyAnclaSeleccion,setKeyAnclaSeleccion] = useState(null);
+    const refKeyAnclaSeleccion = useRef(null);
     const refCheckTodos = useRef();
+
+    const keysSeleccionadasSet = useMemo(() =>
+        new Set(keysSeleccionadas),
+        [keysSeleccionadas]
+    );
 
     const estanTodasSeleccionadas =
         todasLasKeys.length > 0 &&
         todasLasKeys.every(
-            key => keysSeleccionadas.includes(key)
+            key => keysSeleccionadasSet.has(key)
         );
 
-    function cambiarCheckTodos() {
+    const cambiarCheckTodos = useCallback(function cambiarCheckTodos() {
 
         if (estanTodasSeleccionadas) {
             setKeysSeleccionadas([]);
@@ -22,14 +27,14 @@ export function useGridSeleccion({
             setKeysSeleccionadas(todasLasKeys);
         }
 
-    }
+    }, [estanTodasSeleccionadas,todasLasKeys]);
 
-    function cambiarCheckFila(keyFila,e) {
+    const cambiarCheckFila = useCallback(function cambiarCheckFila(keyFila,e) {
 
-        if (e.shiftKey && keyAnclaSeleccion) {
+        if (e.shiftKey && refKeyAnclaSeleccion.current) {
             const indiceAncla =
                 todasLasKeys.findIndex(
-                    key => key === keyAnclaSeleccion
+                    key => key === refKeyAnclaSeleccion.current
                 );
             const indiceFila =
                 todasLasKeys.findIndex(
@@ -70,14 +75,14 @@ export function useGridSeleccion({
             ];
         });
 
-        setKeyAnclaSeleccion(keyFila);
+        refKeyAnclaSeleccion.current = keyFila;
 
-    }
+    }, [todasLasKeys]);
 
     const limpiarSeleccion = useCallback(function limpiarSeleccion() {
 
         setKeysSeleccionadas([]);
-        setKeyAnclaSeleccion(null);
+        refKeyAnclaSeleccion.current = null;
 
     }, []);
 
@@ -95,6 +100,7 @@ export function useGridSeleccion({
 
     return {
         keysSeleccionadas,
+        keysSeleccionadasSet,
         refCheckTodos,
         estanTodasSeleccionadas,
         cambiarCheckTodos,
