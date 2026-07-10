@@ -26,7 +26,8 @@
 
 .header-left {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  gap: 24px;
 }
 
 .header-logo {
@@ -35,6 +36,30 @@
   /* border: 1px solid red; */
  display: block;
  }
+
+.header-page-title {
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  font-family:'Inter', sans-serif;
+  color:#662D91;
+  transform:translateY(6px);
+}
+
+.header-page-menu {
+  font-size:19px;
+  font-weight:700;
+}
+
+.header-page-separator {
+  font-size:17px;
+  font-weight:400;
+}
+
+.header-page-submenu {
+  font-size:15px;
+  font-weight:300;
+}
 
 /* =========================
    DERECHA

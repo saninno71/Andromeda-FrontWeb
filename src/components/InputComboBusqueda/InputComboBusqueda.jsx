@@ -12,6 +12,7 @@ function InputComboBusqueda({
     icono,
     onChange,
     onSeleccionar,
+    onEnter,
     tabIndex
 }) {
 
@@ -50,8 +51,17 @@ function InputComboBusqueda({
             return;
         }
 
-        if (evento.key === "Enter" && items[indiceActivo]) {
-            seleccionarItem(items[indiceActivo]);
+        if (evento.key === "Enter") {
+            if (items[indiceActivo]) {
+                evento.preventDefault();
+                seleccionarItem(items[indiceActivo]);
+                window.setTimeout(() => {
+                    onEnter?.();
+                },0);
+                return;
+            }
+
+            onEnter?.();
             return;
         }
 

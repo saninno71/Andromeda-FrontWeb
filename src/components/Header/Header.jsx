@@ -5,6 +5,8 @@ function Header({
   nombreCompleto = "Boyano Monalli",
   usuarioRed = "BMDG8A",
   descripcion = "Ruben Sanchez",
+  menuLabel = "",
+  submenuLabel = "",
   logoEmpresa = "",
   avatar = "",
 }) {
@@ -13,6 +15,27 @@ function Header({
       {/* IZQUIERDA */}
       <div className="header-left">
         <img src={logoAndromeda} className="header-logo" />
+        {(menuLabel || submenuLabel) && (
+          <div className="header-page-title">
+            {menuLabel && (
+              <span className="header-page-menu">
+                {menuLabel}
+              </span>
+            )}
+
+            {menuLabel && submenuLabel && (
+              <span className="header-page-separator">
+                |
+              </span>
+            )}
+
+            {submenuLabel && (
+              <span className="header-page-submenu">
+                {submenuLabel}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* DERECHA */}

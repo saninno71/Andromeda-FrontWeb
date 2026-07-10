@@ -3,8 +3,9 @@ import BotonToolbar from "../../components/BotonToolbar/BotonToolbar";
 import InputBuscador from "../../components/InputBuscador/InputBuscador";
 import ComboToolbar from "../../components/ComboToolbar/ComboToolbar";
 import InputFecha from "../../components/InputFecha/InputFecha";
-import InputCombo from "../../components/InputCombo/InputCombo";
-import InputComboBusqueda from "../../components/InputComboBusqueda/InputComboBusqueda";
+import ComboEmpresas from "../../components/ComboEmpresas/ComboEmpresas";
+import ComboCuentas from "../../components/ComboCuentas/ComboCuentas";
+import ComboProveedores from "../../components/ComboProveedores/ComboProveedores";
 import MasFiltrosAsientos from "./MasFiltrosAsientos";
 import {
     crearTabIndexConEntrada,
@@ -28,9 +29,6 @@ import btnRefresh from "../../assets/btnRefresh.png";
 
 import {fechaAEntero} from "../../components/updFormatos"
 import { primerDiaMesActual } from "../../components/fechas";
-import { cargarEmpresas } from "../../components/services/empresasService";
-import { cargarCuentas } from "../../components/services/cuentasService";
-import { cargarProveedores } from "../../components/services/proveedoresService";
 
 import { useCallback,useRef,useState,useEffect  } from "react";
 
@@ -52,13 +50,7 @@ const FECHA_DESDE_DEFAULT = primerDiaMesActual();
 
 function FiltroAsientos({
     onFiltrar,
-    onAmpliarTextoGrid,
-    onReducirTextoGrid,
-    onGuardarGrilla,
-    onGuardarComoNueva,
-    vistasGrid,
-    vistaGridActualID,
-    onSeleccionarVistaGrid,
+    gridPreferencias,
     busquedaGrid,
     onBusquedaGridChange
 }) 
@@ -68,18 +60,12 @@ function FiltroAsientos({
 // fecha default    
 const [fechaDesde,setFechaDesde] = useState(FECHA_DESDE_DEFAULT);
 const [fechaHasta,setFechaHasta] = useState(null);
-// estado empresas
-const [empresas,setEmpresas] = useState([]);
 const [empresaSeleccionada,setEmpresaSeleccionada] = useState(null);
-const [cuenta,setCuenta] = useState("");
-const [cuentaKey,setCuentaKey] = useState(null);
-const [cuentas,setCuentas] = useState([]);
+const [cuentaSeleccionada,setCuentaSeleccionada] = useState(null);
 const [mostrarChipsFiltros,setMostrarChipsFiltros] = useState(true);
 const [mostrarMasFiltros,setMostrarMasFiltros] = useState(false);
 const [detalle,setDetalle] = useState("");
-const [proveedor,setProveedor] = useState("");
-const [proveedorKey,setProveedorKey] = useState(null);
-const [proveedores,setProveedores] = useState([]);
+const [proveedorSeleccionado,setProveedorSeleccionado] = useState(null);
 const [cajaBancaria,setCajaBancaria] = useState("");
 const [numeraTipoSeleccionado,setNumeraTipoSeleccionado] = useState(null);
 const [numeroDesde,setNumeroDesde] = useState("");
@@ -90,7 +76,7 @@ const filtrosActualesRef = useRef({
     fechaDesde:FECHA_DESDE_DEFAULT,
     fechaHasta:null,
     empresaSeleccionada:null,
-    cuentaKey:null,
+    cuentaSeleccionada:null,
     detalle:"",
     numeraTipoID:null,
     numeroDesde:"",
@@ -107,7 +93,7 @@ const filtrar = useCallback(async function filtrar() {
         fechaDesde: fechaAEntero(filtrosActuales.fechaDesde),
         fechaHasta: fechaAEntero(filtrosActuales.fechaHasta),
         empresaID: filtrosActuales.empresaSeleccionada?.empresaID,
-        cuentaID: filtrosActuales.cuentaKey,
+        cuentaID: filtrosActuales.cuentaSeleccionada?.cuentaID,
         detalle: filtrosActuales.detalle,
         numeraTipoID: filtrosActuales.numeraTipoID,
         numeroDesde: filtrosActuales.numeroDesde
@@ -150,33 +136,16 @@ function cambiarEmpresa(empresa) {
 
 }
 
-function cambiarCuentaSeleccionada(item) {
+function cambiarCuentaSeleccionada(cuenta) {
 
-    setCuentaKey(item.cuentaID);
-    setCuenta(`${item.cuentaCodigo} - ${item.cuentaNombre}`);
-    actualizarFiltroActual("cuentaKey",item.cuentaID);
-
-}
-
-function cambiarCuentaTexto(valor) {
-
-    setCuenta(valor);
-    setCuentaKey(null);
-    actualizarFiltroActual("cuentaKey",null);
+    setCuentaSeleccionada(cuenta);
+    actualizarFiltroActual("cuentaSeleccionada",cuenta);
 
 }
 
-function cambiarProveedorSeleccionado(item) {
+function cambiarProveedorSeleccionado(proveedor) {
 
-    setProveedorKey(item.proveedorID);
-    setProveedor(`${item.proveedorCodigo} - ${item.proveedorNombre}`);
-
-}
-
-function cambiarProveedorTexto(valor) {
-
-    setProveedor(valor);
-    setProveedorKey(null);
+    setProveedorSeleccionado(proveedor);
 
 }
 
@@ -256,62 +225,6 @@ useEffect(() => {
 
 }, [tabIndexControles,filtrar]);
 
-useEffect(() => {
-    async function obtenerEmpresas() {
-        const datos = await cargarEmpresas();
-        setEmpresas(datos);
-
-        if (datos.length > 0) {
-            // setEmpresaSeleccionada(datos[0]);
-            setEmpresaSeleccionada(null);
-        }
-    }
-    obtenerEmpresas();
-}, []);
-
-useEffect(() => {
-    async function obtenerCuentas() {
-        if (cuenta.length < 2) {
-            setCuentas([]);
-            return;
-        }
-
-        const datos = await cargarCuentas(
-            cuenta,
-            empresaSeleccionada?.empresaID
-        );
-        setCuentas(datos);
-    }
-
-    const timeoutBusqueda = setTimeout(() => {
-        obtenerCuentas();
-    }, 500);
-
-    return () => clearTimeout(timeoutBusqueda);
-}, [cuenta,empresaSeleccionada]);
-
-useEffect(() => {
-    async function obtenerProveedores() {
-        if (proveedor.length < 2) {
-            setProveedores([]);
-            return;
-        }
-
-        const datos = await cargarProveedores(
-            proveedor,
-            empresaSeleccionada?.empresaID
-        );
-        setProveedores(datos);
-    }
-
-    const timeoutBusqueda = setTimeout(() => {
-        obtenerProveedores();
-    }, 500);
-
-    return () => clearTimeout(timeoutBusqueda);
-}, [proveedor,empresaSeleccionada]);
-
-
 function formatearFechaChip(fecha) {
 
     if (!fecha) {
@@ -333,9 +246,9 @@ const hayFiltrosActivos =
     fechaDesde ||
     fechaHasta ||
     empresaSeleccionada ||
-    cuentaKey ||
+    cuentaSeleccionada ||
     detalle ||
-    proveedorKey ||
+    proveedorSeleccionado ||
     numeraTipoSeleccionado ||
     numeroDesde ||
     numeroHasta;
@@ -393,13 +306,13 @@ return (
                 {/* <BotonToolbar texto="" icono={<img src={btnHelp} />}/> */}
                 <ComboToolbar icono={<img src={iconGrilla} />}
                                 flecha={<img src={iconFlechaC} />}
-                                onAmpliarTexto={onAmpliarTextoGrid}
-                                onReducirTexto={onReducirTextoGrid}
-                                onGuardarGrilla={onGuardarGrilla}
-                                onGuardarComoNueva={onGuardarComoNueva}
-                                vistas={vistasGrid}
-                                vistaActualID={vistaGridActualID}
-                                onSeleccionarVista={onSeleccionarVistaGrid}
+                                onAmpliarTexto={gridPreferencias.ampliarTextoGrid}
+                                onReducirTexto={gridPreferencias.reducirTextoGrid}
+                                onGuardarGrilla={gridPreferencias.guardarGrilla}
+                                onGuardarComoNueva={gridPreferencias.guardarComoNueva}
+                                vistas={gridPreferencias.vistasGrid}
+                                vistaActualID={gridPreferencias.vistaGridActualID}
+                                onSeleccionarVista={gridPreferencias.seleccionarVistaGrid}
                                 tabIndex={tabIndexControles.grilla}
                 />
             </div>
@@ -428,27 +341,20 @@ return (
                 icono={<img src={btnCalendar} />}
                 tabIndex={tabIndexControles.fechaHasta}
             />
-            <InputCombo
+            <ComboEmpresas
                 titulo="Empresa"
-                valor={empresaSeleccionada?.empresaNombre || ""}
-                items={empresas}
-                campoID="empresaID"
-                campoDescripcion="empresaNombre"
+                valor={empresaSeleccionada}
                 onChange={cambiarEmpresa}
-                icono={<img src={iconFlechaC} />}
+                onEnter={filtrar}
                 tabIndex={tabIndexControles.empresa}
             />
 
-            <InputComboBusqueda
+            <ComboCuentas
                 titulo="Cuenta"
-                valor={cuenta}
-                items={cuentas}
-                campoID="cuentaID"
-                campoCodigo="cuentaCodigo"
-                campoDescripcion="cuentaNombre"
-                icono={<img src={iconFlechaC} />}
-                onChange={cambiarCuentaTexto}
-                onSeleccionar={cambiarCuentaSeleccionada}
+                valor={cuentaSeleccionada}
+                empresaID={empresaSeleccionada?.empresaID}
+                onChange={cambiarCuentaSeleccionada}
+                onEnter={filtrar}
                 tabIndex={tabIndexControles.cuenta}
             />
 
@@ -481,6 +387,7 @@ return (
                 texto=""
                 variante="transparente"
                 icono={<img src={btnRefresh} />}
+                onClick={filtrar}
             />
         </div>
 
@@ -544,23 +451,18 @@ return (
             </div>
         )}
 
-        {cuentaKey && (
+        {cuentaSeleccionada && (
             <div className="filtroActivoChip" tabIndex={0}>
                 <span className="filtroActivoChipLabel">
                     Cuenta
                 </span>
                 <span className="filtroActivoChipValor">
-                    {cuenta}
+                    {cuentaSeleccionada.cuentaCodigo} - {cuentaSeleccionada.cuentaNombre}
                 </span>
                 <button
-                    onClick={() => {
-                        quitarFiltroChip(() => {
-                            setCuenta("");
-                            setCuentaKey(null);
-                            setCuentas([]);
-                            actualizarFiltroActual("cuentaKey",null);
-                        });
-                    }}
+                    onClick={() =>
+                        quitarFiltroChip(() => cambiarCuentaSeleccionada(null))
+                    }
                 >
                     x
                 </button>
@@ -585,20 +487,17 @@ return (
             </div>
         )}
 
-        {proveedorKey && (
+        {proveedorSeleccionado && (
             <div className="filtroActivoChip" tabIndex={0}>
                 <span className="filtroActivoChipLabel">
                     Proveedor
                 </span>
                 <span className="filtroActivoChipValor">
-                    {proveedor}
+                    {proveedorSeleccionado.proveedorCodigo} - {proveedorSeleccionado.proveedorNombre}
                 </span>
                 <button
                     onClick={() =>
-                        quitarFiltroChip(() => {
-                            cambiarProveedorTexto("");
-                            setProveedores([]);
-                        })
+                        quitarFiltroChip(() => cambiarProveedorSeleccionado(null))
                     }
                 >
                     x
@@ -669,12 +568,9 @@ return (
         fechaDesde={fechaDesde}
         fechaHasta={fechaHasta}
         empresaSeleccionada={empresaSeleccionada}
-        empresas={empresas}
-        cuenta={cuenta}
-        cuentas={cuentas}
+        cuentaSeleccionada={cuentaSeleccionada}
         detalle={detalle}
-        proveedor={proveedor}
-        proveedores={proveedores}
+        proveedorSeleccionado={proveedorSeleccionado}
         cajaBancaria={cajaBancaria}
         numeraTipoSeleccionado={numeraTipoSeleccionado}
         numeroDesde={numeroDesde}
@@ -684,11 +580,9 @@ return (
         onFechaDesdeChange={cambiarFechaDesde}
         onFechaHastaChange={cambiarFechaHasta}
         onEmpresaChange={cambiarEmpresa}
-        onCuentaTextoChange={cambiarCuentaTexto}
-        onCuentaSeleccionar={cambiarCuentaSeleccionada}
+        onCuentaChange={cambiarCuentaSeleccionada}
         onDetalleChange={cambiarDetalle}
-        onProveedorTextoChange={cambiarProveedorTexto}
-        onProveedorSeleccionar={cambiarProveedorSeleccionado}
+        onProveedorChange={cambiarProveedorSeleccionado}
         onCajaBancariaChange={setCajaBancaria}
         onNumeraTipoChange={cambiarNumeraTipo}
         onNumeroDesdeChange={cambiarNumeroDesde}

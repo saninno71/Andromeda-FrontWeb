@@ -5,7 +5,9 @@ import { useEffect,useRef,useState } from "react";
 import BotonToolbar from "../../components/BotonToolbar/BotonToolbar";
 import InputFecha from "../../components/InputFecha/InputFecha";
 import InputCombo from "../../components/InputCombo/InputCombo";
-import InputComboBusqueda from "../../components/InputComboBusqueda/InputComboBusqueda";
+import ComboEmpresas from "../../components/ComboEmpresas/ComboEmpresas";
+import ComboCuentas from "../../components/ComboCuentas/ComboCuentas";
+import ComboProveedores from "../../components/ComboProveedores/ComboProveedores";
 import InputTexto from "../../components/InputTexto/InputTexto";
 import {
     crearTabIndexConEntrada,
@@ -40,12 +42,9 @@ function MasFiltrosAsientos({
     fechaDesde,
     fechaHasta,
     empresaSeleccionada,
-    empresas,
-    cuenta,
-    cuentas,
+    cuentaSeleccionada,
     detalle,
-    proveedor,
-    proveedores,
+    proveedorSeleccionado,
     cajaBancaria,
     numeraTipoSeleccionado,
     numeroDesde,
@@ -55,11 +54,9 @@ function MasFiltrosAsientos({
     onFechaDesdeChange,
     onFechaHastaChange,
     onEmpresaChange,
-    onCuentaTextoChange,
-    onCuentaSeleccionar,
+    onCuentaChange,
     onDetalleChange,
-    onProveedorTextoChange,
-    onProveedorSeleccionar,
+    onProveedorChange,
     onCajaBancariaChange,
     onNumeraTipoChange,
     onNumeroDesdeChange,
@@ -276,29 +273,22 @@ function MasFiltrosAsientos({
                         </div>
 
                         <div className="masFiltrosControl300">
-                            <InputCombo
+                            <ComboEmpresas
                                 titulo="Empresa"
-                                valor={empresaSeleccionada?.empresaNombre || ""}
-                                items={empresas}
-                                campoID="empresaID"
-                                campoDescripcion="empresaNombre"
+                                valor={empresaSeleccionada}
                                 onChange={onEmpresaChange}
-                                icono={<img src={iconFlechaC} />}
+                                onEnter={onFiltrar}
                                 tabIndex={tabIndexControles.empresa}
                             />
                         </div>
 
                         <div className="masFiltrosControl300">
-                            <InputComboBusqueda
+                            <ComboCuentas
                                 titulo="Cuenta"
-                                valor={cuenta}
-                                items={cuentas}
-                                campoID="cuentaID"
-                                campoCodigo="cuentaCodigo"
-                                campoDescripcion="cuentaNombre"
-                                icono={<img src={iconFlechaC} />}
-                                onChange={onCuentaTextoChange}
-                                onSeleccionar={onCuentaSeleccionar}
+                                valor={cuentaSeleccionada}
+                                empresaID={empresaSeleccionada?.empresaID}
+                                onChange={onCuentaChange}
+                                onEnter={onFiltrar}
                                 tabIndex={tabIndexControles.cuenta}
                             />
                         </div>
@@ -316,16 +306,12 @@ function MasFiltrosAsientos({
                         </div>
 
                         <div className="masFiltrosCampoConBoton">
-                            <InputComboBusqueda
+                            <ComboProveedores
                                 titulo="Proveedor"
-                                valor={proveedor}
-                                items={proveedores}
-                                campoID="proveedorID"
-                                campoCodigo="proveedorCodigo"
-                                campoDescripcion="proveedorNombre"
-                                icono={<img src={iconFlechaC} />}
-                                onChange={onProveedorTextoChange}
-                                onSeleccionar={onProveedorSeleccionar}
+                                valor={proveedorSeleccionado}
+                                empresaID={empresaSeleccionada?.empresaID}
+                                onChange={onProveedorChange}
+                                onEnter={onFiltrar}
                                 tabIndex={tabIndexControles.proveedor}
                             />
                             <BotonToolbar

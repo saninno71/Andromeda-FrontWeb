@@ -34,6 +34,7 @@ function Grid({
     dataGrid,
     mostrarCheck,
     cargando,
+    mostrarSinDatos = true,
     cargandoPaginas = false,
     totalRegistrosRemotos = null,
     enfoqueVersion = null,
@@ -496,7 +497,7 @@ useEffect(() => {
             </div>
         )}
 
-        {!cargando && dataOrdenada.length === 0 && (
+        {!cargando && mostrarSinDatos && dataOrdenada.length === 0 && (
             <div className="grillaSinDatosOverlay">
 
                 <div className="grillaSinDatosIcono">

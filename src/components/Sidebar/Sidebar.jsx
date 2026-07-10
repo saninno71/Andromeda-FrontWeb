@@ -118,7 +118,11 @@ return (
                     key={subItem.id}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onSelectPage(subItem.route);
+                      onSelectPage({
+                        route:subItem.route,
+                        menuLabel:item.label,
+                        submenuLabel:subItem.label
+                      });
                     }}
                   >
                     <span className="sub-icon">▸</span>

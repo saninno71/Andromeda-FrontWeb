@@ -8,6 +8,7 @@ function InputCombo({
     campoID,
     campoDescripcion,
     onChange,
+    onEnter,
     icono,
     tabIndex
 })
@@ -16,6 +17,7 @@ function InputCombo({
     const [abierto, setAbierto] = useState(false);
     const [indiceActivo,setIndiceActivo] = useState(0);
     const comboRef = useRef(null);
+    const controlRef = useRef(null);
 
     function abrirCombo() {
 
@@ -45,6 +47,9 @@ function InputCombo({
 
         onChange(item);
         cerrarCombo();
+        window.setTimeout(() => {
+            controlRef.current?.focus();
+        },0);
 
     }
 
@@ -83,6 +88,7 @@ function InputCombo({
     <div className="inputComboContainer" ref={comboRef}>
 
         <div
+            ref={controlRef}
             className="inputCombo"
             tabIndex={tabIndex}
             onClick={alternarCombo}
@@ -118,7 +124,19 @@ function InputCombo({
 
                 if (evento.key === "Enter") {
                     if (abierto && items[indiceActivo]) {
+                        evento.preventDefault();
+                        evento.stopPropagation();
                         seleccionarItem(items[indiceActivo]);
+                        window.setTimeout(() => {
+                            onEnter?.();
+                        },0);
+                        return;
+                    }
+
+                    if (!abierto && onEnter) {
+                        evento.preventDefault();
+                        evento.stopPropagation();
+                        onEnter();
                     }
                     return;
                 }

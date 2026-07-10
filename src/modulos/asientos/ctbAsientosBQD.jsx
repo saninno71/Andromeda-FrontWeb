@@ -1,81 +1,24 @@
 import "./ctbAsientosBQD.css";
 
-import { useCallback,useEffect,useRef,useState } from "react";
+import { useState } from "react";
 //componente grilla
 import Grid from "../../components/grid/Grid";
+import { useGridCargaPaginada } from "../../components/grid/useGridCargaPaginada";
+import { useGridPreferencias } from "../../components/grid/useGridPreferencias";
+import ModalInfo from "../../components/ModalInfo/ModalInfo";
 //componente filtros
 import FiltroAsientos from "./FiltroAsientos";
 
-/*importa la info total*/
-// import dataGrid  from "./simul/Asientos.json";
-import { cargarAsientos } from "./asientosService";
+import {
+    cargarAsientos,
+    CONFIG_CARGA_ASIENTOS
+} from "./asientosService";
 import { primerDiaMesActual } from "../../components/fechas";
 import { fechaAEntero } from "../../components/updFormatos";
 
 const GRID_STORAGE_KEY = "andromeda:grid:asientos:views";
-const TAMANO_PAGINA_DEFAULT = 100;
-const TOPE_REGISTROS_DEFAULT = 1000;
-const PAUSA_ENTRE_PAGINAS_DEFAULT = 80;
-const VISTA_DEFAULT = {
-    id:"default",
-    nombre:"Default",
-    esDefault:true
-};
-const TAMANO_FUENTE_DEFAULT = 13;
-
-function esperar(ms) {
-
-    return new Promise(resolve => {
-        window.setTimeout(resolve,ms);
-    });
-
-}
-
-function leerVistasGuardadas() {
-
-    try
-    {
-        const datos =
-            JSON.parse(
-                localStorage.getItem(GRID_STORAGE_KEY)
-            );
-
-        return {
-            vistaActualID:
-                datos?.vistaActualID || VISTA_DEFAULT.id,
-            vistas:
-                Array.isArray(datos?.vistas)
-                    ? datos.vistas
-                    : []
-        };
-    }
-    catch(error)
-    {
-        console.error(error);
-        return {
-            vistaActualID:VISTA_DEFAULT.id,
-            vistas:[]
-        };
-    }
-
-}
-
-function guardarVistas(vistas,vistaActualID) {
-
-    localStorage.setItem(
-        GRID_STORAGE_KEY,
-        JSON.stringify({
-            vistaActualID,
-            vistas
-        })
-    );
-
-}
 
 function CtbAsientosBQD({
-    tamanoPagina = TAMANO_PAGINA_DEFAULT,
-    topeRegistros = TOPE_REGISTROS_DEFAULT,
-    pausaEntrePaginas = PAUSA_ENTRE_PAGINAS_DEFAULT,
     ejecutarConsultaInicial = false
 })
 
@@ -126,34 +69,11 @@ function CtbAsientosBQD({
     ];
 
     const mostrarCheck=true;
-    const [dataGrid,setDataGrid] = useState([]);
-    const [cargando,setCargando] = useState(false);
-    const [cargandoPaginas,setCargandoPaginas] = useState(false);
-    const [totalRegistrosRemotos,setTotalRegistrosRemotos] = useState(null);
-    const [versionEnfoqueGrid,setVersionEnfoqueGrid] = useState(0);
-    const consultaActualRef = useRef(0);
-    const datosVistasIniciales = leerVistasGuardadas();
-    const [vistasGuardadas,setVistasGuardadas] =
-        useState(datosVistasIniciales.vistas);
-    const [vistaGridActualID,setVistaGridActualID] =
-        useState(datosVistasIniciales.vistaActualID);
-    const vistaInicial =
-        datosVistasIniciales.vistas.find(
-            vista => vista.id === datosVistasIniciales.vistaActualID
-        );
-    const [tamanoFuenteGrid,setTamanoFuenteGrid] =
-        useState(vistaInicial?.fontSize || TAMANO_FUENTE_DEFAULT);
-    const [layoutColumnasGrid,setLayoutColumnasGrid] =
-        useState(vistaInicial?.columns || null);
-    const [layoutVersion,setLayoutVersion] = useState(0);
-    const [layoutActualGrid,setLayoutActualGrid] = useState([]);
     const [busquedaGrid,setBusquedaGrid] = useState("");
-    const consultaAbortRef = useRef(null);
 
-    const vistasGrid = [
-        VISTA_DEFAULT,
-        ...vistasGuardadas
-    ];
+    const gridPreferencias = useGridPreferencias({
+        storageKey:GRID_STORAGE_KEY
+    });
 
     const filtrosDefault = {
         fechaDesde: fechaAEntero(primerDiaMesActual()),
@@ -161,269 +81,20 @@ function CtbAsientosBQD({
         empresaID: 0
     };
 
-    async function filtrarAsientos(filtros)
-    {
-        const consultaID = consultaActualRef.current + 1;
-        consultaActualRef.current = consultaID;
-        consultaAbortRef.current?.abort();
-
-        const abortController = new AbortController();
-        consultaAbortRef.current = abortController;
-
-        try
-        {
-        // console.time("total");
-        setCargando(true);
-        setCargandoPaginas(false);
-        setTotalRegistrosRemotos(null);
-        setDataGrid([]);
-        // console.time("api");
-        const primeraPagina = await cargarAsientos(
-            filtros,
-            {
-                top:tamanoPagina,
-                skip:0,
-                incluirTotal:true,
-                signal:abortController.signal
-            }
-        );
-
-        if (consultaActualRef.current !== consultaID) {
-            return;
-        }
-
-        const totalRemoto =
-            primeraPagina.total ?? primeraPagina.items.length;
-
-        // console.timeEnd("api");
-        // console.time("setDataGrid");
-        setDataGrid(primeraPagina.items);
-        setTotalRegistrosRemotos(totalRemoto);
-        setVersionEnfoqueGrid(version => version + 1);
-        setCargando(false);
-        // console.timeEnd("setDataGrid");
-        // console.timeEnd("total");
-
-        const limiteCarga =
-            Math.min(
-                totalRemoto,
-                topeRegistros
-            );
-
-        let registrosCargados = primeraPagina.items.length;
-
-        if (registrosCargados >= limiteCarga) {
-            return;
-        }
-
-        setCargandoPaginas(true);
-
-        while (
-            registrosCargados < limiteCarga &&
-            consultaActualRef.current === consultaID
-        ) {
-            const pagina = await cargarAsientos(
-                filtros,
-                {
-                    top:Math.min(
-                        tamanoPagina,
-                        limiteCarga - registrosCargados
-                    ),
-                    skip:registrosCargados,
-                    incluirTotal:false,
-                    signal:abortController.signal
-                }
-            );
-
-            if (consultaActualRef.current !== consultaID) {
-                return;
-            }
-
-            if (pagina.items.length === 0) {
-                break;
-            }
-
-            registrosCargados += pagina.items.length;
-            setDataGrid(datosActuales => [
-                ...datosActuales,
-                ...pagina.items
-            ]);
-
-            await esperar(pausaEntrePaginas);
-        }
-        }
-        finally
-        {
-            if (consultaActualRef.current === consultaID) {
-                setCargando(false);
-                setCargandoPaginas(false);
-                consultaAbortRef.current = null;
-            }
-        }
-    }
-
-    useEffect(() => {
-        // console.time("consulta");
-        if (ejecutarConsultaInicial) {
-            filtrarAsientos(filtrosDefault);
-        }
-        // console.timeEnd("consulta");
-        return () => {
-            consultaActualRef.current += 1;
-            consultaAbortRef.current?.abort();
-            consultaAbortRef.current = null;
-        };
-    },[ejecutarConsultaInicial]);
-
-    function ampliarTextoGrid() {
-        setTamanoFuenteGrid(tamanoActual =>
-            Math.min(15,tamanoActual + 1)
-        );
-    }
-
-    function reducirTextoGrid() {
-        setTamanoFuenteGrid(tamanoActual =>
-            Math.max(11,tamanoActual - 1)
-        );
-    }
-
-    const actualizarLayoutActualGrid = useCallback((layout) => {
-        setLayoutActualGrid(layout);
-    }, []);
-
-    function obtenerProximoNombreVista() {
-
-        const numeros =
-            vistasGuardadas
-            .map(vista => {
-                const match =
-                    vista.nombre.match(/^Grilla (\d+)$/);
-
-                return match
-                    ? Number(match[1])
-                    : 0;
-            });
-
-        const proximoNumero =
-            Math.max(0,...numeros) + 1;
-
-        return `Grilla ${proximoNumero}`;
-
-    }
-
-    function armarVista(nombre) {
-
-        const id =
-            nombre
-            .toLowerCase()
-            .replace(/\s+/g,"-");
-
-        return {
-            id,
-            nombre,
-            fontSize:tamanoFuenteGrid,
-            columns:layoutActualGrid
-        };
-
-    }
-
-    function guardarGrilla() {
-
-        if (vistaGridActualID === VISTA_DEFAULT.id) {
-            guardarComoNueva();
-            return;
-        }
-
-        const vistasActualizadas =
-            vistasGuardadas.map(vista =>
-                vista.id === vistaGridActualID
-                    ? {
-                        ...vista,
-                        fontSize:tamanoFuenteGrid,
-                        columns:layoutActualGrid
-                    }
-                    : vista
-            );
-
-        setVistasGuardadas(vistasActualizadas);
-        guardarVistas(
-            vistasActualizadas,
-            vistaGridActualID
-        );
-
-    }
-
-    function guardarComoNueva() {
-
-        const nombre =
-            obtenerProximoNombreVista();
-
-        const nuevaVista =
-            armarVista(nombre);
-
-        const vistasActualizadas = [
-            ...vistasGuardadas,
-            nuevaVista
-        ];
-
-        setVistasGuardadas(vistasActualizadas);
-        setVistaGridActualID(nuevaVista.id);
-        guardarVistas(
-            vistasActualizadas,
-            nuevaVista.id
-        );
-
-    }
-
-    function seleccionarVistaGrid(vistaID) {
-
-        setVistaGridActualID(vistaID);
-
-        if (vistaID === VISTA_DEFAULT.id) {
-            setTamanoFuenteGrid(TAMANO_FUENTE_DEFAULT);
-            setLayoutColumnasGrid(null);
-            setLayoutVersion(version => version + 1);
-            guardarVistas(
-                vistasGuardadas,
-                vistaID
-            );
-            return;
-        }
-
-        const vista =
-            vistasGuardadas.find(
-                item => item.id === vistaID
-            );
-
-        if (!vista) {
-            return;
-        }
-
-        setTamanoFuenteGrid(
-            vista.fontSize || TAMANO_FUENTE_DEFAULT
-        );
-        setLayoutColumnasGrid(vista.columns || null);
-        setLayoutVersion(version => version + 1);
-        guardarVistas(
-            vistasGuardadas,
-            vistaID
-        );
-
-    }
+    const cargaAsientos = useGridCargaPaginada({
+        cargarPagina:cargarAsientos,
+        configuracion:CONFIG_CARGA_ASIENTOS,
+        ejecutarConsultaInicial,
+        filtrosIniciales:filtrosDefault
+    });
 
   return (
 
     <div className="asientosContent">
         <div className="contenedorFiltros">
             <FiltroAsientos
-                onFiltrar={filtrarAsientos}
-                onAmpliarTextoGrid={ampliarTextoGrid}
-                onReducirTextoGrid={reducirTextoGrid}
-                onGuardarGrilla={guardarGrilla}
-                onGuardarComoNueva={guardarComoNueva}
-                vistasGrid={vistasGrid}
-                vistaGridActualID={vistaGridActualID}
-                onSeleccionarVistaGrid={seleccionarVistaGrid}
+                onFiltrar={cargaAsientos.cargar}
+                gridPreferencias={gridPreferencias}
                 busquedaGrid={busquedaGrid}
                 onBusquedaGridChange={setBusquedaGrid}
             />
@@ -432,19 +103,38 @@ function CtbAsientosBQD({
 
         <div className="contenedorGrilla">
             <Grid   columnasVisibles={columnasVisibles}
-                    dataGrid={dataGrid}
+                    dataGrid={cargaAsientos.dataGrid}
                     mostrarCheck={mostrarCheck}
-                    cargando={cargando}
-                    cargandoPaginas={cargandoPaginas}
-                    totalRegistrosRemotos={totalRegistrosRemotos}
-                    enfoqueVersion={versionEnfoqueGrid}
-                    tamanoFuente={tamanoFuenteGrid}
-                    layoutColumnas={layoutColumnasGrid}
-                    layoutVersion={layoutVersion}
-                    onLayoutChange={actualizarLayoutActualGrid}
+                    cargando={cargaAsientos.cargando}
+                    mostrarSinDatos={cargaAsientos.consultaEjecutada}
+                    cargandoPaginas={cargaAsientos.cargandoPaginas}
+                    totalRegistrosRemotos={cargaAsientos.totalRegistrosRemotos}
+                    enfoqueVersion={cargaAsientos.versionEnfoqueGrid}
+                    tamanoFuente={gridPreferencias.tamanoFuenteGrid}
+                    layoutColumnas={gridPreferencias.layoutColumnasGrid}
+                    layoutVersion={gridPreferencias.layoutVersion}
+                    onLayoutChange={gridPreferencias.actualizarLayoutActualGrid}
                     textoBusqueda={busquedaGrid}
             />
         </div>
+
+        <ModalInfo
+            abierto={Boolean(cargaAsientos.avisoTopeRegistros)}
+            titulo="Cantidad de registros"
+            mensaje={
+                cargaAsientos.avisoTopeRegistros
+                    ? (
+                        "La cantidad de registros encontrados (" +
+                        cargaAsientos.avisoTopeRegistros.totalRegistros +
+                        ") supera el tope configurado para esta pagina. " +
+                        "Se cargaron los primeros " +
+                        cargaAsientos.avisoTopeRegistros.topeRegistros +
+                        " registros."
+                    )
+                    : ""
+            }
+            onCerrar={cargaAsientos.cerrarAvisoTopeRegistros}
+        />
 
 
     </div>

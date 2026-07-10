@@ -10,17 +10,25 @@ function PantallaPrincipal() {
   const [monitorView, setMonitorView] = useState("visible");
   const [msgMonitor, setMsgMonitor] = useState("123");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeRoute, setActiveRoute] = useState("accesos_directos");
+  const [activePage, setActivePage] = useState({
+    route:"accesos_directos",
+    menuLabel:"",
+    submenuLabel:""
+  });
   
   const addMsgMonitor = (strMsg) =>
     setMsgMonitor(strMsg);
 
   return (
     <div className="PantallaPrincipal">
-      <Header className="header" />
+      <Header
+        className="header"
+        menuLabel={activePage.menuLabel}
+        submenuLabel={activePage.submenuLabel}
+      />
       <div className="main">
-        <Sidebar className="sidebar" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} onSelectPage={setActiveRoute}  />
-        <Content className="content" activeRoute={activeRoute} /> 
+        <Sidebar className="sidebar" sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} onSelectPage={setActivePage}  />
+        <Content className="content" activeRoute={activePage.route} /> 
       </div>
     
     </div>
@@ -28,5 +36,4 @@ function PantallaPrincipal() {
 }
 
 export default PantallaPrincipal;
-
 

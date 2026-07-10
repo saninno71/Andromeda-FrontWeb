@@ -6,6 +6,12 @@ import {
 
 const TAMANO_PAGINA_ASIENTOS = 100;
 
+export const CONFIG_CARGA_ASIENTOS = {
+    tamanoPagina:TAMANO_PAGINA_ASIENTOS,
+    topeRegistros:1000,
+    pausaEntrePaginas:80
+};
+
 export async function cargarAsientos(
     filtrosConsulta = {},
     opciones = {}

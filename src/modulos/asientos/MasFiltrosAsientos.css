@@ -42,7 +42,7 @@
     height:22px;
     border:1px solid #662D91;
     border-radius:50%;
-    background:white;
+    background:#F4ECFA;
     color:#662D91;
     font-family:'Inter', sans-serif;
     font-size:15px;
@@ -68,6 +68,18 @@
 }
 
 .masFiltrosFormulario {
+    --mas-filtros-ancho-base:288px;
+    --mas-filtros-ancho-boton:40px;
+    --mas-filtros-gap:12px;
+    --mas-filtros-ancho-con-boton:calc(
+        var(--mas-filtros-ancho-base) +
+        var(--mas-filtros-gap) +
+        var(--mas-filtros-ancho-boton)
+    );
+    --mas-filtros-ancho-destacado:calc(
+        var(--mas-filtros-ancho-con-boton) * 1.3
+    );
+
     display:flex;
     flex-direction:column;
     gap:12px;
@@ -78,7 +90,7 @@
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:8px;
-    width:288px;
+    width:var(--mas-filtros-ancho-base);
 }
 
 .masFiltrosFormulario .inputFechaContenido,
@@ -105,25 +117,25 @@
 .masFiltrosControl300 .inputComboContainer,
 .masFiltrosControl300 .inputCombo,
 .masFiltrosControl300 .inputComboBusqueda {
-    width:300px;
+    width:var(--mas-filtros-ancho-base);
 }
 
 .masFiltrosControl580 .inputComboContainer,
 .masFiltrosControl580 .inputCombo,
 .masFiltrosFormulario .masFiltrosInputAncho {
-    width:580px;
+    width:var(--mas-filtros-ancho-destacado);
 }
 
 .masFiltrosFormulario .masFiltrosInput280 {
-    width:280px;
+    width:var(--mas-filtros-ancho-base);
 }
 
 .masFiltrosCampoConBoton .inputComboBusqueda {
-    width:280px;
+    width:var(--mas-filtros-ancho-base);
 }
 
 .masFiltrosFormulario .masFiltrosInput300 {
-    width:300px;
+    width:var(--mas-filtros-ancho-base);
 }
 
 .masFiltrosSeccionTitulo {
@@ -141,11 +153,13 @@
 .masFiltrosCampoConBoton {
     display:flex;
     align-items:center;
-    gap:12px;
+    gap:var(--mas-filtros-gap);
+    width:var(--mas-filtros-ancho-con-boton);
 }
 
 .botonToolbar.masFiltrosBotonMas {
-    width:40px;
+    width:var(--mas-filtros-ancho-boton);
+    min-width:var(--mas-filtros-ancho-boton);
     height:40px;
     padding-left:0;
     padding-right:0;

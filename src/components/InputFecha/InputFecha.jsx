@@ -1,8 +1,33 @@
-import { forwardRef,useImperativeHandle,useRef } from "react";
+import {
+    forwardRef,
+    useEffect,
+    useImperativeHandle,
+    useRef,
+    useState
+} from "react";
 import "./InputFecha.css";
 import DatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
+
+function formatearFecha(fecha) {
+
+    if (!(fecha instanceof Date) || isNaN(fecha.getTime())) {
+        return "";
+    }
+
+    const dia =
+        String(fecha.getDate()).padStart(2,"0");
+
+    const mes =
+        String(fecha.getMonth() + 1).padStart(2,"0");
+
+    const anio =
+        String(fecha.getFullYear()).padStart(4,"0");
+
+    return `${dia}/${mes}/${anio}`;
+
+}
 
 const InputFecha = forwardRef(function InputFecha({
     titulo,
@@ -17,6 +42,15 @@ const InputFecha = forwardRef(function InputFecha({
 {
     const datePickerRef = useRef(null);
     const contenedorRef = useRef(null);
+    const refCambioManual = useRef(false);
+    const refFiltrarLuegoDeCambio = useRef(false);
+    const [textoFecha,setTextoFecha] = useState(
+        formatearFecha(valor)
+    );
+
+    useEffect(() => {
+        setTextoFecha(formatearFecha(valor));
+    }, [valor]);
 
     useImperativeHandle(ref,() => ({
         focus() {
@@ -40,37 +74,104 @@ const InputFecha = forwardRef(function InputFecha({
 
     function manejarCambioManual(e) {
 
-        if (!e?.target?.value) {
+        if (e?.target?.tagName !== "INPUT") {
             return;
         }
 
-        let valor = e.target.value.replace(/\D/g, "");
+        refCambioManual.current = true;
 
-        if (valor.length > 2) {
-            valor = valor.slice(0, 2) + "/" + valor.slice(2);
+        const digitos =
+            e.target.value
+            .replace(/\D/g, "")
+            .slice(0,8);
+
+        if (digitos.length === 0) {
+            onChange(null);
+            setTextoFecha("");
+            window.setTimeout(() => {
+                refCambioManual.current = false;
+            },0);
+            return;
         }
 
-        if (valor.length > 4) {
-            valor = valor.slice(0, 5) + "/" + valor.slice(5);
+        let valor = digitos;
+
+        if (digitos.length > 2) {
+            valor = digitos.slice(0, 2) + "/" + digitos.slice(2);
         }
 
-        e.target.value = valor;
+        if (digitos.length > 4) {
+            valor =
+                digitos.slice(0, 2) +
+                "/" +
+                digitos.slice(2, 4) +
+                "/" +
+                digitos.slice(4);
+        }
+
+        setTextoFecha(valor);
+
+        if (digitos.length !== 8) {
+            window.setTimeout(() => {
+                refCambioManual.current = false;
+            },0);
+            return;
+        }
+
+        const dia = Number(digitos.slice(0,2));
+        const mes = Number(digitos.slice(2,4));
+        const anio = Number(digitos.slice(4,8));
+        const fecha = new Date(anio,mes - 1,dia);
+
+        const esFechaValida =
+            fecha.getFullYear() === anio &&
+            fecha.getMonth() === mes - 1 &&
+            fecha.getDate() === dia;
+
+        if (esFechaValida) {
+            onChange(fecha);
+        }
+
+        window.setTimeout(() => {
+            refCambioManual.current = false;
+        },0);
     }
 
     function manejarCambio(fecha) {
 
+        if (refCambioManual.current) {
+            return;
+        }
+
+        setTextoFecha(formatearFecha(fecha));
         onChange(fecha);
         datePickerRef.current?.setOpen(false);
+
+        if (refFiltrarLuegoDeCambio.current) {
+            refFiltrarLuegoDeCambio.current = false;
+            window.setTimeout(() => {
+                onEnter?.();
+            },0);
+        }
 
     }
 
     function manejarTecla(e) {
 
         if (e.key === "Enter") {
-            window.setTimeout(() => {
-                datePickerRef.current?.setOpen(false);
-                onEnter?.();
-            },0);
+            e.stopPropagation();
+
+            const calendarioAbierto =
+                Boolean(
+                    document.querySelector(".react-datepicker-popper")
+                );
+
+            if (calendarioAbierto) {
+                refFiltrarLuegoDeCambio.current = true;
+                return;
+            }
+
+            onEnter?.();
         }
 
     }
@@ -93,6 +194,7 @@ const InputFecha = forwardRef(function InputFecha({
                     <DatePicker
                         ref={datePickerRef}
                         selected={valor}
+                        value={textoFecha}
                         onChange={manejarCambio}
                         onChangeRaw={manejarCambioManual}
                         onKeyDown={manejarTecla}

@@ -1,0 +1,56 @@
+.modalInfoOverlay {
+    position:fixed;
+    inset:0;
+    z-index:100000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,0.28);
+}
+
+.modalInfo {
+    width:min(420px, calc(100vw - 32px));
+    background:#FFFFFF;
+    border:1px solid #00AEEF;
+    border-radius:8px;
+    box-shadow:0 12px 32px rgba(0,0,0,0.25);
+    padding:18px 20px 16px;
+    box-sizing:border-box;
+    font-family:"Inter", sans-serif;
+}
+
+.modalInfoTitulo {
+    font-size:16px;
+    font-weight:700;
+    color:#662D91;
+    margin-bottom:10px;
+}
+
+.modalInfoMensaje {
+    font-size:13px;
+    font-weight:500;
+    line-height:1.45;
+    color:#5E5E5E;
+    margin-bottom:18px;
+}
+
+.modalInfoAcciones {
+    display:flex;
+    justify-content:flex-end;
+}
+
+.modalInfoBoton {
+    background:#00AEEF;
+    color:#FFFFFF;
+    border:none;
+    border-radius:4px;
+    padding:9px 16px;
+    font-family:"Inter", sans-serif;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+}
+
+.modalInfoBoton:hover {
+    filter:brightness(0.95);
+}
