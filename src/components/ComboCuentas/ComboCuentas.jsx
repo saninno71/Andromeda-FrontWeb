@@ -38,6 +38,7 @@ function ComboCuentas({
     useEffect(() => {
 
         let cancelado = false;
+        const abortController = new AbortController();
 
         async function buscarCuentas() {
             if (texto.length < 2 || valor) {
@@ -45,7 +46,11 @@ function ComboCuentas({
                 return;
             }
 
-            const datos = await cargarCuentas(texto,empresaID);
+            const datos = await cargarCuentas(
+                texto,
+                empresaID,
+                abortController.signal
+            );
 
             if (!cancelado) {
                 setCuentas(datos);
@@ -57,6 +62,7 @@ function ComboCuentas({
 
         return () => {
             cancelado = true;
+            abortController.abort();
             window.clearTimeout(timeoutBusqueda);
         };
 

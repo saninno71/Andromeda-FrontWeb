@@ -7,6 +7,7 @@ import InputFecha from "../../components/InputFecha/InputFecha";
 import InputCombo from "../../components/InputCombo/InputCombo";
 import ComboEmpresas from "../../components/ComboEmpresas/ComboEmpresas";
 import ComboCuentas from "../../components/ComboCuentas/ComboCuentas";
+import ComboClientes from "../../components/ComboClientes/ComboClientes";
 import ComboProveedores from "../../components/ComboProveedores/ComboProveedores";
 import InputTexto from "../../components/InputTexto/InputTexto";
 import {
@@ -25,6 +26,8 @@ const tabIndexMasFiltrosAsientos = crearTabIndexConEntrada([
     "empresa",
     "cuenta",
     "detalle",
+    "cliente",
+    "clienteMas",
     "proveedor",
     "proveedorMas",
     "cajaBancaria",
@@ -44,6 +47,7 @@ function MasFiltrosAsientos({
     empresaSeleccionada,
     cuentaSeleccionada,
     detalle,
+    clienteSeleccionado,
     proveedorSeleccionado,
     cajaBancaria,
     numeraTipoSeleccionado,
@@ -56,6 +60,7 @@ function MasFiltrosAsientos({
     onEmpresaChange,
     onCuentaChange,
     onDetalleChange,
+    onClienteChange,
     onProveedorChange,
     onCajaBancariaChange,
     onNumeraTipoChange,
@@ -303,6 +308,22 @@ function MasFiltrosAsientos({
 
                         <div className="masFiltrosSeccionTitulo">
                             Subcuenta
+                        </div>
+
+                        <div className="masFiltrosCampoConBoton">
+                            <ComboClientes
+                                titulo="Cliente"
+                                valor={clienteSeleccionado}
+                                onChange={onClienteChange}
+                                onEnter={onFiltrar}
+                                tabIndex={tabIndexControles.cliente}
+                            />
+                            <BotonToolbar
+                                texto="+"
+                                className="masFiltrosBotonMas"
+                                tabIndex={tabIndexControles.clienteMas}
+                                onKeyDown={filtrarConEnterBoton}
+                            />
                         </div>
 
                         <div className="masFiltrosCampoConBoton">

@@ -1,29 +1,28 @@
 import { useEffect,useRef,useState } from "react";
 import InputComboBusqueda from "../InputComboBusqueda/InputComboBusqueda";
-import { cargarProveedores } from "../services/proveedoresService";
+import { cargarClientes } from "../services/clientesService";
 import iconFlechaC from "../../assets/iconFlechaC.png";
 
-function formatearProveedor(proveedor) {
+function formatearCliente(cliente) {
 
-    if (!proveedor) {
+    if (!cliente) {
         return "";
     }
 
-    return `${proveedor.proveedorCodigo} - ${proveedor.proveedorNombre}`;
+    return `${cliente.clienteCodigo} - ${cliente.clienteNombre}`;
 
 }
 
-function ComboProveedores({
-    titulo = "Proveedor",
+function ComboClientes({
+    titulo = "Cliente",
     valor,
-    empresaID,
     onChange,
     onEnter,
     tabIndex
 }) {
 
-    const [texto,setTexto] = useState(formatearProveedor(valor));
-    const [proveedores,setProveedores] = useState([]);
+    const [texto,setTexto] = useState(formatearCliente(valor));
+    const [clientes,setClientes] = useState([]);
     const refLimpiezaPorEscritura = useRef(false);
 
     useEffect(() => {
@@ -32,7 +31,7 @@ function ComboProveedores({
             return;
         }
 
-        setTexto(formatearProveedor(valor));
+        setTexto(formatearCliente(valor));
     }, [valor]);
 
     useEffect(() => {
@@ -40,25 +39,24 @@ function ComboProveedores({
         let cancelado = false;
         const abortController = new AbortController();
 
-        async function buscarProveedores() {
+        async function buscarClientes() {
             if (texto.length < 2 || valor) {
-                setProveedores([]);
+                setClientes([]);
                 return;
             }
 
-            const datos = await cargarProveedores(
+            const datos = await cargarClientes(
                 texto,
-                empresaID,
                 abortController.signal
             );
 
             if (!cancelado) {
-                setProveedores(datos);
+                setClientes(datos);
             }
         }
 
         const timeoutBusqueda =
-            window.setTimeout(buscarProveedores,500);
+            window.setTimeout(buscarClientes,500);
 
         return () => {
             cancelado = true;
@@ -66,7 +64,7 @@ function ComboProveedores({
             window.clearTimeout(timeoutBusqueda);
         };
 
-    }, [texto,empresaID,valor]);
+    }, [texto,valor]);
 
     function cambiarTexto(nuevoTexto) {
         setTexto(nuevoTexto);
@@ -74,23 +72,23 @@ function ComboProveedores({
         onChange(null);
     }
 
-    function seleccionarProveedor(proveedor) {
-        setTexto(formatearProveedor(proveedor));
-        setProveedores([]);
-        onChange(proveedor);
+    function seleccionarCliente(cliente) {
+        setTexto(formatearCliente(cliente));
+        setClientes([]);
+        onChange(cliente);
     }
 
     return (
         <InputComboBusqueda
             titulo={titulo}
             valor={texto}
-            items={proveedores}
-            campoID="proveedorID"
-            campoCodigo="proveedorCodigo"
-            campoDescripcion="proveedorNombre"
+            items={clientes}
+            campoID="clienteID"
+            campoCodigo="clienteCodigo"
+            campoDescripcion="clienteNombre"
             icono={<img src={iconFlechaC} />}
             onChange={cambiarTexto}
-            onSeleccionar={seleccionarProveedor}
+            onSeleccionar={seleccionarCliente}
             onEnter={onEnter}
             tabIndex={tabIndex}
         />
@@ -98,4 +96,4 @@ function ComboProveedores({
 
 }
 
-export default ComboProveedores;
+export default ComboClientes;

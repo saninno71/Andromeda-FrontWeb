@@ -1,7 +1,7 @@
 import {API_URL} from "../../config/AndromedaFrontConfig.js";
 import { obtenerItemsOData } from "./odataResponse.js";
 
-const TOPE_PROVEEDORES_BUSQUEDA = 20;
+const TOPE_CLIENTES_BUSQUEDA = 20;
 
 function escaparTextoOData(texto) {
 
@@ -9,7 +9,7 @@ function escaparTextoOData(texto) {
 
 }
 
-export async function cargarProveedores(textoBusqueda, empresaID, signal) {
+export async function cargarClientes(textoBusqueda, signal) {
 
     try
     {
@@ -17,24 +17,19 @@ export async function cargarProveedores(textoBusqueda, empresaID, signal) {
         const texto = escaparTextoOData(textoBusquedaLimpio.toLowerCase());
         const esCodigo = /^[0-9]+$/.test(textoBusquedaLimpio);
 
-        const filtros = [
+        const filtro =
             esCodigo
                 ? `codigo eq ${Number(textoBusquedaLimpio)}`
-                : `contains(tolower(nombre),tolower('${texto}'))`
-        ];
-
-        if (empresaID) {
-            filtros.push(`empresaID eq ${Number(empresaID)}`);
-        }
+                : `contains(tolower(nombre),tolower('${texto}'))`;
 
         const parametros = new URLSearchParams({
-            "$filter":filtros.join(" and "),
+            "$filter":filtro,
             "$select":"id,codigo,nombre",
-            "$top":String(TOPE_PROVEEDORES_BUSQUEDA)
+            "$top":String(TOPE_CLIENTES_BUSQUEDA)
         });
 
         const response = await fetch(
-            `${API_URL}/api/compras/proveedores/odata/cstcpsProveedores?${parametros.toString()}`,
+            `${API_URL}/api/ventas/clientes/odata/CstVtsClientes?${parametros.toString()}`,
             {
                 method:"POST",
                 headers: {
@@ -46,12 +41,12 @@ export async function cargarProveedores(textoBusqueda, empresaID, signal) {
         );
 
         const data = await response.json();
-        const proveedores = obtenerItemsOData(data);
+        const clientes = obtenerItemsOData(data);
 
-        return proveedores.map((proveedor) => ({
-            proveedorID: proveedor.ID ?? proveedor.Id ?? proveedor.id,
-            proveedorCodigo: proveedor.Codigo ?? proveedor.codigo,
-            proveedorNombre: proveedor.Nombre ?? proveedor.nombre
+        return clientes.map((cliente) => ({
+            clienteID: cliente.ID ?? cliente.Id ?? cliente.id,
+            clienteCodigo: cliente.Codigo ?? cliente.codigo,
+            clienteNombre: cliente.Nombre ?? cliente.nombre
         }));
     }
     catch(error)

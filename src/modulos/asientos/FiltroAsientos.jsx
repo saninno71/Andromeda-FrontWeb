@@ -5,7 +5,6 @@ import ComboToolbar from "../../components/ComboToolbar/ComboToolbar";
 import InputFecha from "../../components/InputFecha/InputFecha";
 import ComboEmpresas from "../../components/ComboEmpresas/ComboEmpresas";
 import ComboCuentas from "../../components/ComboCuentas/ComboCuentas";
-import ComboProveedores from "../../components/ComboProveedores/ComboProveedores";
 import MasFiltrosAsientos from "./MasFiltrosAsientos";
 import {
     crearTabIndexConEntrada,
@@ -65,6 +64,7 @@ const [cuentaSeleccionada,setCuentaSeleccionada] = useState(null);
 const [mostrarChipsFiltros,setMostrarChipsFiltros] = useState(true);
 const [mostrarMasFiltros,setMostrarMasFiltros] = useState(false);
 const [detalle,setDetalle] = useState("");
+const [clienteSeleccionado,setClienteSeleccionado] = useState(null);
 const [proveedorSeleccionado,setProveedorSeleccionado] = useState(null);
 const [cajaBancaria,setCajaBancaria] = useState("");
 const [numeraTipoSeleccionado,setNumeraTipoSeleccionado] = useState(null);
@@ -78,6 +78,8 @@ const filtrosActualesRef = useRef({
     empresaSeleccionada:null,
     cuentaSeleccionada:null,
     detalle:"",
+    clienteSeleccionado:null,
+    proveedorSeleccionado:null,
     numeraTipoID:null,
     numeroDesde:"",
     numeroHasta:""
@@ -95,6 +97,8 @@ const filtrar = useCallback(async function filtrar() {
         empresaID: filtrosActuales.empresaSeleccionada?.empresaID,
         cuentaID: filtrosActuales.cuentaSeleccionada?.cuentaID,
         detalle: filtrosActuales.detalle,
+        clienteID: filtrosActuales.clienteSeleccionado?.clienteID,
+        proveedorID: filtrosActuales.proveedorSeleccionado?.proveedorID,
         numeraTipoID: filtrosActuales.numeraTipoID,
         numeroDesde: filtrosActuales.numeroDesde
             ? Number(filtrosActuales.numeroDesde)
@@ -146,6 +150,14 @@ function cambiarCuentaSeleccionada(cuenta) {
 function cambiarProveedorSeleccionado(proveedor) {
 
     setProveedorSeleccionado(proveedor);
+    actualizarFiltroActual("proveedorSeleccionado",proveedor);
+
+}
+
+function cambiarClienteSeleccionado(cliente) {
+
+    setClienteSeleccionado(cliente);
+    actualizarFiltroActual("clienteSeleccionado",cliente);
 
 }
 
@@ -248,6 +260,7 @@ const hayFiltrosActivos =
     empresaSeleccionada ||
     cuentaSeleccionada ||
     detalle ||
+    clienteSeleccionado ||
     proveedorSeleccionado ||
     numeraTipoSeleccionado ||
     numeroDesde ||
@@ -505,6 +518,24 @@ return (
             </div>
         )}
 
+        {clienteSeleccionado && (
+            <div className="filtroActivoChip" tabIndex={0}>
+                <span className="filtroActivoChipLabel">
+                    Cliente
+                </span>
+                <span className="filtroActivoChipValor">
+                    {clienteSeleccionado.clienteCodigo} - {clienteSeleccionado.clienteNombre}
+                </span>
+                <button
+                    onClick={() =>
+                        quitarFiltroChip(() => cambiarClienteSeleccionado(null))
+                    }
+                >
+                    x
+                </button>
+            </div>
+        )}
+
         {numeraTipoSeleccionado && (
             <div className="filtroActivoChip" tabIndex={0}>
                 <span className="filtroActivoChipLabel">
@@ -570,6 +601,7 @@ return (
         empresaSeleccionada={empresaSeleccionada}
         cuentaSeleccionada={cuentaSeleccionada}
         detalle={detalle}
+        clienteSeleccionado={clienteSeleccionado}
         proveedorSeleccionado={proveedorSeleccionado}
         cajaBancaria={cajaBancaria}
         numeraTipoSeleccionado={numeraTipoSeleccionado}
@@ -582,6 +614,7 @@ return (
         onEmpresaChange={cambiarEmpresa}
         onCuentaChange={cambiarCuentaSeleccionada}
         onDetalleChange={cambiarDetalle}
+        onClienteChange={cambiarClienteSeleccionado}
         onProveedorChange={cambiarProveedorSeleccionado}
         onCajaBancariaChange={setCajaBancaria}
         onNumeraTipoChange={cambiarNumeraTipo}

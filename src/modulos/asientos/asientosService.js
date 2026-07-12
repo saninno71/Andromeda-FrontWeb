@@ -32,12 +32,15 @@ export async function cargarAsientos(
             empresaID,
             cuentaID,
             detalle,
+            clienteID,
+            proveedorID,
             numeroDesde,
             numeroHasta,
             numeraTipoID
         } = filtrosConsulta;
 
         const filtro = {};
+        const filtrosOData = [];
 
         if (fechaDesde)
             filtro.fechaDesde = fechaDesde;
@@ -54,6 +57,18 @@ export async function cargarAsientos(
         if (detalle)
            filtro.detalle = detalle;
 
+        if (clienteID) {
+           filtrosOData.push(
+               `(debeClienteID eq ${Number(clienteID)} or haberClienteID eq ${Number(clienteID)})`
+           );
+        }
+
+        if (proveedorID) {
+           filtrosOData.push(
+               `(debeProveedorID eq ${Number(proveedorID)} or haberProveedorID eq ${Number(proveedorID)})`
+           );
+        }
+
         if (numeroDesde)
            filtro.numeroDesde = numeroDesde;
 
@@ -68,6 +83,10 @@ export async function cargarAsientos(
             "$skip":String(skip),
             "$count":incluirTotal ? "true" : "false"
         });
+
+        if (filtrosOData.length > 0) {
+            parametros.set("$filter",filtrosOData.join(" and "));
+        }
 
         const url =
             `${API_URL}/api/contabilidad/asientos/odata/CstctbAsientos?${parametros.toString()}`;

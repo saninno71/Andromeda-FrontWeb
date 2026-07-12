@@ -1,30 +1,49 @@
 import {API_URL} from "../../config/AndromedaFrontConfig.js";
 import { obtenerItemsOData } from "./odataResponse.js";
 
-export async function cargarCuentas(textoBusqueda, empresaID) {
+const TOPE_CUENTAS_BUSQUEDA = 20;
+
+function escaparTextoOData(texto) {
+
+    return texto.replaceAll("'","''");
+
+}
+
+export async function cargarCuentas(textoBusqueda, empresaID, signal) {
 
     try
     {
-        const filtro = {};
-        const texto = textoBusqueda.trim();
-        const esCodigo = /^[0-9.]+$/.test(texto);
+        const texto = escaparTextoOData(
+            textoBusqueda.trim().toLowerCase()
+        );
 
-        if (esCodigo)
-            filtro.codigo = texto;
-        else
-            filtro.nombre = texto;
+        const filtros = [
+            "(" +
+            `contains(tolower(Nombre),tolower('${texto}'))` +
+            " or " +
+            `contains(tolower(Codigo),tolower('${texto}'))` +
+            ")"
+        ];
 
-        if (empresaID)
-            filtro.empresaID = empresaID;
+        if (empresaID) {
+            filtros.push(`EmpresaID eq ${Number(empresaID)}`);
+        }
+
+        const parametros = new URLSearchParams({
+            "$filter":filtros.join(" and "),
+            "$select":"Id,Codigo,Nombre",
+            "$top":String(TOPE_CUENTAS_BUSQUEDA)
+        });
 
         const response = await fetch(
-            `${API_URL}/api/contabilidad/planDeCuentas/odata/CstctbCuentas`,
+            `${API_URL}/api/contabilidad/planDeCuentas/odata/CstctbCuentas?${parametros.toString()}`,
             {
                 method:"POST",
                 headers: {
                     "Content-Type":"application/json"
                 },
-                body: JSON.stringify(filtro)
+                body: JSON.stringify({}),
+                signal
             }
         );
 
@@ -32,13 +51,17 @@ export async function cargarCuentas(textoBusqueda, empresaID) {
         const cuentas = obtenerItemsOData(data);
 
         return cuentas.map((cuenta) => ({
-            cuentaID: cuenta.id,
-            cuentaCodigo: cuenta.codigo,
-            cuentaNombre: cuenta.nombre
+            cuentaID: cuenta.Id,
+            cuentaCodigo: cuenta.Codigo,
+            cuentaNombre: cuenta.Nombre
         }));
     }
     catch(error)
     {
+        if (error.name === "AbortError") {
+            return [];
+        }
+
         console.error(error);
         return [];
     }
