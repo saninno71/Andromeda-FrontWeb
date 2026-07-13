@@ -109,6 +109,7 @@ function CtbAsientosBQD({
                     mostrarSinDatos={cargaAsientos.consultaEjecutada}
                     cargandoPaginas={cargaAsientos.cargandoPaginas}
                     totalRegistrosRemotos={cargaAsientos.totalRegistrosRemotos}
+                    registrosCargados={cargaAsientos.registrosCargados}
                     enfoqueVersion={cargaAsientos.versionEnfoqueGrid}
                     tamanoFuente={gridPreferencias.tamanoFuenteGrid}
                     layoutColumnas={gridPreferencias.layoutColumnasGrid}

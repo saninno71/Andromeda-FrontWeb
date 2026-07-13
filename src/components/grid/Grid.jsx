@@ -37,6 +37,7 @@ function Grid({
     mostrarSinDatos = true,
     cargandoPaginas = false,
     totalRegistrosRemotos = null,
+    registrosCargados = null,
     enfoqueVersion = null,
     tamanoFuente = 13,
     layoutColumnas = null,
@@ -325,6 +326,10 @@ useEffect(() => {
     const estiloColumna = obtenerEstiloColumna;
 
     const cantidadTotalRegistros = dataGrid.length;
+    const cantidadRegistrosCargados =
+        cargandoPaginas && registrosCargados != null
+            ? registrosCargados
+            : cantidadTotalRegistros;
     const cantidadRegistrosFiltrados = dataFiltrada.length;
     const cantidadSeleccionados = keysSeleccionadas.length;
 
@@ -350,7 +355,7 @@ useEffect(() => {
     }
 
     segmentosCantidad.push(
-        cantidadTotalRegistros +
+        cantidadRegistrosCargados +
         " de " +
         cantidadTotalDisponible +
         " registros"

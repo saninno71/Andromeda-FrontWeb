@@ -16,6 +16,7 @@ export function useGridCargaPaginada({
 }) {
 
     const {
+        tamanoPrimeraPagina = tamanoPagina,
         tamanoPagina,
         topeRegistros,
         pausaEntrePaginas
@@ -25,6 +26,7 @@ export function useGridCargaPaginada({
     const [cargando,setCargando] = useState(false);
     const [cargandoPaginas,setCargandoPaginas] = useState(false);
     const [totalRegistrosRemotos,setTotalRegistrosRemotos] = useState(null);
+    const [registrosCargados,setRegistrosCargados] = useState(0);
     const [avisoTopeRegistros,setAvisoTopeRegistros] = useState(null);
     const [versionEnfoqueGrid,setVersionEnfoqueGrid] = useState(0);
     const [consultaEjecutada,setConsultaEjecutada] = useState(
@@ -47,6 +49,7 @@ export function useGridCargaPaginada({
             setCargando(true);
             setCargandoPaginas(false);
             setTotalRegistrosRemotos(null);
+            setRegistrosCargados(0);
             setAvisoTopeRegistros(null);
             setConsultaEjecutada(true);
             setDataGrid([]);
@@ -54,7 +57,7 @@ export function useGridCargaPaginada({
             const primeraPagina = await cargarPagina(
                 filtros,
                 {
-                    top:tamanoPagina,
+                    top:tamanoPrimeraPagina,
                     skip:0,
                     incluirTotal:true,
                     signal:abortController.signal
@@ -80,6 +83,10 @@ export function useGridCargaPaginada({
                 );
 
             let registrosCargados = primeraPagina.items.length;
+            const datosAcumulados = [
+                ...primeraPagina.items
+            ];
+            setRegistrosCargados(registrosCargados);
 
             if (registrosCargados >= limiteCarga) {
                 if (totalRemoto > topeRegistros) {
@@ -119,12 +126,17 @@ export function useGridCargaPaginada({
                 }
 
                 registrosCargados += pagina.items.length;
-                setDataGrid(datosActuales => [
-                    ...datosActuales,
-                    ...pagina.items
-                ]);
+                datosAcumulados.push(...pagina.items);
+                setRegistrosCargados(registrosCargados);
 
                 await esperar(pausaEntrePaginas);
+            }
+
+            if (
+                consultaActualRef.current === consultaID &&
+                datosAcumulados.length !== primeraPagina.items.length
+            ) {
+                setDataGrid(datosAcumulados);
             }
 
             if (
@@ -167,6 +179,7 @@ export function useGridCargaPaginada({
         cargando,
         cargandoPaginas,
         totalRegistrosRemotos,
+        registrosCargados,
         avisoTopeRegistros,
         versionEnfoqueGrid,
         consultaEjecutada,

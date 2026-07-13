@@ -4,11 +4,13 @@ import {
     obtenerTotalOData
 } from "../../components/services/odataResponse.js";
 
-const TAMANO_PAGINA_ASIENTOS = 100;
+const TAMANO_PRIMERA_PAGINA_ASIENTOS = 100;
+const TAMANO_PAGINA_ASIENTOS = 1500;
 
 export const CONFIG_CARGA_ASIENTOS = {
+    tamanoPrimeraPagina:TAMANO_PRIMERA_PAGINA_ASIENTOS,
     tamanoPagina:TAMANO_PAGINA_ASIENTOS,
-    topeRegistros:1000,
+    topeRegistros:5000,
     pausaEntrePaginas:80
 };
 
