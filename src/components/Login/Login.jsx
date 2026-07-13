@@ -107,7 +107,7 @@ function Login({onResult}) {
               </div>
             </div>
 
-            <span className="login-version">v5.2</span>
+            <span className="login-version">v5.3</span>
 
         </div>
     </div>
