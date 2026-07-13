@@ -103,6 +103,14 @@
     box-sizing:border-box;
 }
 
+.masFiltrosModal .masFiltrosFormulario .inputFechaContenido,
+.masFiltrosModal .masFiltrosFormulario .inputCombo,
+.masFiltrosModal .masFiltrosFormulario .inputComboBusqueda {
+    border:1px solid #00AEEF !important;
+    border-radius:2px !important;
+    background:white !important;
+}
+
 .masFiltrosFormulario .inputFechaInput,
 .masFiltrosFormulario .inputComboValor,
 .masFiltrosFormulario .inputComboBusquedaInput,
