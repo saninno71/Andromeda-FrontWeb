@@ -3,7 +3,7 @@ import { useCallback,useEffect,useMemo,useState } from "react";
 export function useGridVirtualizacion({
     filas,
     refContenedor,
-    altoFilaEstimado = 24,
+    altoFilaEstimado = 30,
     overscan = 10
 }) {
 

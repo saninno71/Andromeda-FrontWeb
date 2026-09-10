@@ -1,0 +1,168 @@
+.planCuentasPagina {
+    display:flex;
+    flex-direction:column;
+    height:100%;
+    min-height:0;
+    background:#DCECF3;
+}
+
+.planCuentasToolbar {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-shrink:0;
+    padding:14px 18px;
+    background:#DCECF3;
+    gap:12px;
+}
+
+.planCuentasToolbar > div:first-child {
+    flex:1;
+}
+
+.planCuentasTitulo {
+    color:#662D91;
+    font-family:"Inter",sans-serif;
+    font-size:18px;
+    font-weight:700;
+}
+
+.planCuentasSubtitulo {
+    margin-top:4px;
+    color:#5E5E5E;
+    font-family:"Inter",sans-serif;
+    font-size:12px;
+    font-weight:500;
+}
+
+.planCuentasGrilla {
+    flex:1;
+    min-height:0;
+    padding-left:12px;
+    padding-right:12px;
+}
+
+.planCuentasCambios {
+    flex-shrink:0;
+    height:150px;
+    margin:12px;
+    padding:10px;
+    box-sizing:border-box;
+    border:1px solid #00AEEF;
+    background:#FFFFFF;
+    overflow:auto;
+}
+
+.planCuentasCambiosTitulo {
+    color:#00AEEF;
+    font-family:"Inter",sans-serif;
+    font-size:13px;
+    font-weight:700;
+}
+
+.planCuentasCambios pre {
+    margin:8px 0 0;
+    color:#5E5E5E;
+    font-family:Consolas,monospace;
+    font-size:12px;
+}
+
+.planCuentasModalOverlay {
+    position:fixed;
+    inset:0;
+    z-index:100000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,0.28);
+}
+
+.planCuentasModal {
+    width:720px;
+    max-width:calc(100vw - 40px);
+    max-height:calc(100vh - 60px);
+    background:#FFFFFF;
+    border:1px solid #00AEEF;
+    box-shadow:0 10px 28px rgba(0,0,0,0.25);
+    font-family:"Inter",sans-serif;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+}
+
+.planCuentasModalHeader {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 16px;
+    background:#DCECF3;
+    border-bottom:1px solid #00AEEF;
+}
+
+.planCuentasModalTitulo {
+    color:#662D91;
+    font-size:18px;
+    font-weight:700;
+}
+
+.planCuentasModalSubtitulo {
+    margin-top:3px;
+    color:#5E5E5E;
+    font-size:12px;
+    font-weight:500;
+}
+
+.planCuentasModalCerrar {
+    width:30px;
+    height:30px;
+    border:1px solid #662D91;
+    border-radius:50%;
+    background:#F3EAF8;
+    color:#662D91;
+    font-family:"Inter",sans-serif;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+}
+
+.planCuentasModalFormulario {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    padding:16px;
+}
+
+.planCuentasModalFormulario label {
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    color:#00AEEF;
+    font-size:11px;
+    font-weight:600;
+}
+
+.planCuentasModalFormulario label:last-child {
+    grid-column:1 / -1;
+}
+
+.planCuentasModalFormulario input {
+    height:34px;
+    box-sizing:border-box;
+    border:1px solid #00AEEF;
+    padding:0 10px;
+    color:#5E5E5E;
+    font-family:"Inter",sans-serif;
+    font-size:13px;
+    outline:none;
+}
+
+.planCuentasModalTablaContenedor {
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+    width:100%;
+    padding:0 16px 16px;
+    height:260px;
+    box-sizing:border-box;
+    overflow:hidden;
+}

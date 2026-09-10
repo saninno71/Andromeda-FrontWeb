@@ -186,7 +186,8 @@ function InputCombo({
                     <div
                         key={item[campoID]}
                         className={`inputComboItem ${
-                            indice === indiceActivo
+                            indice === indiceActivo ||
+                            item[campoDescripcion] === valor
                                 ? "inputComboItemActivo"
                                 : ""
                         }`}

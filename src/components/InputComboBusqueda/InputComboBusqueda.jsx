@@ -120,7 +120,9 @@ function InputComboBusqueda({
                             <div
                                 key={item[campoID]}
                                 className={`inputComboBusquedaItem ${
-                                    indice === indiceActivo
+                                    indice === indiceActivo ||
+                                    obtenerTextoItem(item) === valor ||
+                                    item[campoDescripcion] === valor
                                         ? "inputComboBusquedaItemActivo"
                                         : ""
                                 }`}

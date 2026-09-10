@@ -1,0 +1,58 @@
+[
+    {
+        "id":1,
+        "codigo":"A-001",
+        "descripcion":"Concepto inicial",
+        "estado":"Pendiente",
+        "importe":12500
+    },
+    {
+        "id":2,
+        "codigo":"A-002",
+        "descripcion":"Ajuste contable",
+        "estado":"Revisado",
+        "importe":8230.4
+    },
+    {
+        "id":3,
+        "codigo":"A-003",
+        "descripcion":"Movimiento auxiliar",
+        "estado":"Pendiente",
+        "importe":950
+    },
+    {
+        "id":4,
+        "codigo":"A-004",
+        "descripcion":"Control de saldos",
+        "estado":"Aprobado",
+        "importe":31400.75
+    },
+    {
+        "id":5,
+        "codigo":"A-005",
+        "descripcion":"Validacion interna",
+        "estado":"Pendiente",
+        "importe":4100
+    },
+    {
+        "id":6,
+        "codigo":"A-006",
+        "descripcion":"Cierre mensual",
+        "estado":"Revisado",
+        "importe":19870.25
+    },
+    {
+        "id":7,
+        "codigo":"A-007",
+        "descripcion":"Diferencia menor",
+        "estado":"Aprobado",
+        "importe":120
+    },
+    {
+        "id":8,
+        "codigo":"A-008",
+        "descripcion":"Asiento provisorio",
+        "estado":"Pendiente",
+        "importe":7540.9
+    }
+]

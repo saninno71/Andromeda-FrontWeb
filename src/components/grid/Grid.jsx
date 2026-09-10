@@ -43,10 +43,16 @@ function Grid({
     layoutColumnas = null,
     layoutVersion = 0,
     onLayoutChange,
-    textoBusqueda = ""
+    textoBusqueda = "",
+    editable = false,
+    onCellChange,
+    onRowChange,
+    onDeleteRow,
+    celdasModificadas = null,
+    altoFila = 30
 }) {
 
-     const ANCHO_COLUMNA_CHECK = 20;
+     const ANCHO_COLUMNA_CHECK = 26;
      const ANCHO_MINIMO_COLUMNA = 12;
      const ANCHO_SCROLL_VERTICAL = 8;
      const ANCHO_ESPACIO_FINAL = 40;
@@ -73,6 +79,16 @@ function Grid({
     const [filaSeleccionada,setFilaSeleccionada] = useState(null);
     const [mostrarMenuFila,setMostrarMenuFila] = useState(false);
     const [topMenuFila,setTopMenuFila] = useState(0);
+    const [filaEditandoKey,setFilaEditandoKey] = useState(null);
+    const [filaEditandoOriginal,setFilaEditandoOriginal] = useState(null);
+    const [filaEditandoDraft,setFilaEditandoDraft] = useState(null);
+
+    const cerrarMenuFila = useCallback(function cerrarMenuFila() {
+
+        setMostrarMenuFila(false);
+        setFilaSeleccionada(null);
+
+    }, []);
 
     //inicializa coleccion de columnas ordenadas por default
     const [ordenamiento,setOrdenamiento] =
@@ -95,11 +111,14 @@ function Grid({
     //logica para adminsitar la seleccion de la fila y visualizacion del menu flotante
     const seleccionarFila = useCallback(function seleccionarFila(fila,e)
     {
+        if (filaEditandoKey) {
+            return;
+        }
+
         if(filaSeleccionada === fila)
         {
             //si fila seleccionada la deselecciona
-            setFilaSeleccionada(null);
-            setMostrarMenuFila(false);
+            cerrarMenuFila();
 
             return;
         }
@@ -119,7 +138,7 @@ function Grid({
 
         setFilaSeleccionada(fila);
         setMostrarMenuFila(true);
-    }, [filaSeleccionada]);
+    }, [filaSeleccionada,filaEditandoKey,cerrarMenuFila]);
 
     //determina si es una fila seleccioanda
     const obtenerClaseFila = useCallback(function obtenerClaseFila(
@@ -140,8 +159,7 @@ function Grid({
     function manejarOrden(campo)
     {
 
-            setMostrarMenuFila(false);
-    setFilaSeleccionada(null);
+            cerrarMenuFila();
 
     setOrdenamiento(prev =>
             toggleOrdenamiento(prev,campo)
@@ -298,6 +316,9 @@ useEffect(() =>
     setMostrarMenuFila(false);
     limpiarSeleccion();
     setFilaSeleccionada(null);
+    setFilaEditandoKey(null);
+    setFilaEditandoOriginal(null);
+    setFilaEditandoDraft(null);
 },
 [
     enfoqueVersion == null
@@ -366,12 +387,118 @@ useEffect(() => {
 
     const claseFila = useCallback(function claseFila(indiceFila, keyFila) {
 
-        return obtenerClaseFilaGrid({
+        const claseBase = obtenerClaseFilaGrid({
             indiceFila,
             keyFila,
             keysSeleccionadasSet
         });
-    }, [keysSeleccionadasSet]);
+
+        return keyFila === filaEditandoKey
+            ? `${claseBase} filaEditando`
+            : claseBase;
+    }, [keysSeleccionadasSet,filaEditandoKey]);
+
+    function iniciarEdicionFila(fila,keyFila) {
+
+        if (!editable) {
+            return;
+        }
+
+        setFilaEditandoKey(keyFila);
+        setFilaEditandoOriginal({...fila});
+        setFilaEditandoDraft({...fila});
+        cerrarMenuFila();
+
+    }
+
+    function cambiarDraftFila(campo,valorNuevo) {
+
+        setFilaEditandoDraft(draftActual => ({
+            ...draftActual,
+            [campo]:valorNuevo
+        }));
+
+    }
+
+    function confirmarEdicionFila() {
+
+        if (!filaEditandoKey || !filaEditandoOriginal || !filaEditandoDraft) {
+            return false;
+        }
+
+        const cambios =
+            columnasVisibles
+            .filter(columna => columna.editable === true)
+            .map(columna => ({
+                campo:columna.campo,
+                valorAnterior:filaEditandoOriginal[columna.campo],
+                valorNuevo:filaEditandoDraft[columna.campo],
+                columna
+            }))
+            .filter(cambio =>
+                cambio.valorAnterior !== cambio.valorNuevo
+            );
+
+        if (cambios.length > 0) {
+            onRowChange?.({
+                keyFila:filaEditandoKey,
+                filaOriginal:filaEditandoOriginal,
+                filaNueva:filaEditandoDraft,
+                cambios
+            });
+
+            cambios.forEach(cambio => {
+                onCellChange?.({
+                    fila:filaEditandoOriginal,
+                    keyFila:filaEditandoKey,
+                    campo:cambio.campo,
+                    valorAnterior:cambio.valorAnterior,
+                    valorNuevo:cambio.valorNuevo,
+                    columna:cambio.columna
+                });
+            });
+        }
+
+        setFilaEditandoKey(null);
+        setFilaEditandoOriginal(null);
+        setFilaEditandoDraft(null);
+
+        return true;
+
+    }
+
+    function cancelarEdicionFila() {
+
+        setFilaEditandoKey(null);
+        setFilaEditandoOriginal(null);
+        setFilaEditandoDraft(null);
+
+    }
+
+    function manejarClickSimpleFila(fila,keyFila) {
+
+        if (filaEditandoKey && filaEditandoKey !== keyFila) {
+            confirmarEdicionFila();
+        }
+
+        cerrarMenuFila();
+
+    }
+
+    function eliminarFilaSeleccionada() {
+
+        if (!filaSeleccionada) {
+            return;
+        }
+
+        onDeleteRow?.({
+            fila:filaSeleccionada,
+            keyFila:armarKeyFila(filaSeleccionada)
+        });
+
+        cerrarMenuFila();
+
+    }
 
     const {
         anchoContenidoScrollHorizontal,
@@ -389,10 +516,7 @@ useEffect(() => {
         anchoColumnaCheck:ANCHO_COLUMNA_CHECK,
         anchoEspacioFinal:ANCHO_ESPACIO_FINAL,
         anchoScrollVertical:ANCHO_SCROLL_VERTICAL,
-        onOcultarMenuFila:() => {
-            setMostrarMenuFila(false);
-            setFilaSeleccionada(null);
-        }
+        onOcultarMenuFila:cerrarMenuFila
     });
 
     const {
@@ -408,7 +532,9 @@ useEffect(() => {
         columnasParaMostrar,
         sincronizarDesdeScrollVertical,
         sincronizarDesdeScrollHorizontal,
-        sincronizarDesdeGrillaDatos
+        sincronizarDesdeGrillaDatos,
+        onOcultarMenuFila:cerrarMenuFila,
+        onConfirmarEdicionActiva:confirmarEdicionFila
     });
 
     const {
@@ -419,7 +545,8 @@ useEffect(() => {
         actualizarScrollTop
     } = useGridVirtualizacion({
         filas:dataOrdenada,
-        refContenedor:refGrillaDatos
+        refContenedor:refGrillaDatos,
+        altoFilaEstimado:altoFila
     });
 
     useEffect(() => {
@@ -490,7 +617,8 @@ useEffect(() => {
         onKeyDown={manejarTeclaScroll}
         style={{
             "--grid-font-size": tamanoFuente + "px",
-            "--grid-total-font-size": (tamanoFuente + 1) + "px"
+            "--grid-total-font-size": (tamanoFuente + 1) + "px",
+            "--grid-row-height": altoFila + "px"
         }}
     >
         {cargando && (
@@ -536,10 +664,12 @@ useEffect(() => {
                         <thead>
                             <tr>
                             {mostrarCheck && (
-                                <th style={{
-                                    width: ANCHO_COLUMNA_CHECK + "px",
-                                    minWidth: ANCHO_COLUMNA_CHECK + "px",
-                                    maxWidth: ANCHO_COLUMNA_CHECK + "px"
+                                <th
+                                    className="grillaCheckCelda"
+                                    style={{
+                                        width: ANCHO_COLUMNA_CHECK + "px",
+                                        minWidth: ANCHO_COLUMNA_CHECK + "px",
+                                        maxWidth: ANCHO_COLUMNA_CHECK + "px"
                                     }}
                                 >
                                     <input
@@ -633,6 +763,19 @@ useEffect(() => {
                                 refPrimeraCeldaDatos={refPrimeraCeldaDatos}
                                 estiloColumna={estiloColumna}
                                 estiloEspacioFinal={estiloEspacioFinal}
+                                editable={editable}
+                                onCellChange={onCellChange}
+                                celdasModificadas={celdasModificadas}
+                                filaEditando={filaEditandoKey === keyFila}
+                                filaDraft={
+                                    filaEditandoKey === keyFila
+                                        ? filaEditandoDraft
+                                        : null
+                                }
+                                onDraftChange={cambiarDraftFila}
+                                onConfirmarEdicionFila={confirmarEdicionFila}
+                                onCancelarEdicionFila={cancelarEdicionFila}
+                                onClickSimpleFila={manejarClickSimpleFila}
                             />
                         );
                     })
@@ -655,7 +798,7 @@ useEffect(() => {
 
             <GridMenuFila
                 filaSeleccionada={filaSeleccionada}
-                mostrarMenuFila={mostrarMenuFila}
+                mostrarMenuFila={mostrarMenuFila && !filaEditandoKey}
                 claseFila={claseFila}
                 indiceFila={
                     dataOrdenada.findIndex(
@@ -669,6 +812,20 @@ useEffect(() => {
                 }
                 topMenuFila={topMenuFila}
                 scrollTop={refGrillaDatos.current?.scrollTop ?? 0}
+                scrollLeft={refGrillaDatos.current?.scrollLeft ?? 0}
+                anchoContenido={anchoContenidoScrollHorizontal}
+                anchoContenedor={refGrillaDatos.current?.clientWidth ?? 0}
+                onEditarFila={() => {
+                    if (!filaSeleccionada) {
+                        return;
+                    }
+
+                    iniciarEdicionFila(
+                        filaSeleccionada,
+                        armarKeyFila(filaSeleccionada)
+                    );
+                }}
+                onEliminarFila={eliminarFilaSeleccionada}
             />
 
 

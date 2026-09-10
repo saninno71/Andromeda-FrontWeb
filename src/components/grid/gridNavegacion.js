@@ -7,7 +7,9 @@ export function crearNavegacionGrid({
     columnasParaMostrar,
     sincronizarDesdeScrollVertical,
     sincronizarDesdeScrollHorizontal,
-    sincronizarDesdeGrillaDatos
+    sincronizarDesdeGrillaDatos,
+    onOcultarMenuFila,
+    onConfirmarEdicionActiva
 }) {
 
     function obtenerCeldaDatos(indiceFila,indiceColumna) {
@@ -99,6 +101,11 @@ export function crearNavegacionGrid({
 
         if (hayControlDesplegado()) {
             return;
+        }
+
+        if (esFlechaNavegacion(e.key)) {
+            onConfirmarEdicionActiva?.();
+            onOcultarMenuFila?.();
         }
 
         const checkActivo =
