@@ -1,52 +1,23 @@
-import { useEffect,useState } from "react";
 import InputCombo from "../InputCombo/InputCombo";
-import { cargarEmpresas } from "../services/empresasService";
+import useEmpresa from "./useEmpresa.js";
 import iconFlechaC from "../../assets/iconFlechaC.png";
 
-function ComboEmpresas({
-    titulo = "Empresa",
-    valor,
-    onChange,
-    onEnter,
-    tabIndex
-}) {
-
-    const [empresas,setEmpresas] = useState([]);
-
-    useEffect(() => {
-
-        let cancelado = false;
-
-        async function obtenerEmpresas() {
-            const datos = await cargarEmpresas();
-
-            if (!cancelado) {
-                setEmpresas(datos);
-            }
-        }
-
-        obtenerEmpresas();
-
-        return () => {
-            cancelado = true;
-        };
-
-    }, []);
+function ComboEmpresas({ titulo = "Empresa", valor, onChange, onEnter, tabIndex }) {
+    const { empresas, texto, seleccionarEmpresa } = useEmpresa({ valor, onChange });
 
     return (
         <InputCombo
             titulo={titulo}
-            valor={valor?.empresaNombre || ""}
+            valor={texto}
             items={empresas}
             campoID="empresaID"
             campoDescripcion="empresaNombre"
-            onChange={onChange}
+            onChange={seleccionarEmpresa}
             onEnter={onEnter}
             icono={<img src={iconFlechaC} />}
             tabIndex={tabIndex}
         />
     );
-
 }
 
 export default ComboEmpresas;

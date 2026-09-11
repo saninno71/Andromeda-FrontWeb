@@ -1,6 +1,7 @@
+import { configurarEditoresAsientos } from "./asientosEditores";
 import "./ctbAsientosBQD.css";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 //componente grilla
 import Grid from "../../components/grid/Grid";
 import { useGridCargaPaginada } from "../../components/grid/useGridCargaPaginada";
@@ -16,6 +17,8 @@ import {
 import { primerDiaMesActual } from "../../components/fechas";
 import { fechaAEntero } from "../../components/updFormatos";
 
+const claveEdicionLocal = fila => JSON.stringify([fila.comprobanteID, fila.monedaCodigo]);
+
 const GRID_STORAGE_KEY = "andromeda:grid:asientos:views";
 
 function CtbAsientosBQD({
@@ -25,7 +28,7 @@ function CtbAsientosBQD({
 {
 
     /*definicion de columnas */
-    const columnasVisibles  = [
+    const columnasVisibles  = configurarEditoresAsientos([
     {campo: "comprobanteID", titulo: "ID", visible: false, formato: "entero", mascara: "", key: true, suma: false, ancho: 100, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
     {campo: "fecha", titulo: "Fecha", visible: true, formato: "fecha", mascara: "DD/MM/YYYY", key: false, suma: false, ancho: 110, align: "center", desdoblarTexto: false, ordenDefault: "1", direccionDefault: "desc"},
     {campo: "numeraTipoID", titulo: "NumeraTipoID", visible: false, formato: "entero", mascara: "", key: false, suma: false, ancho: 100, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
@@ -66,8 +69,10 @@ function CtbAsientosBQD({
     {campo: "empresaID", titulo: "EmpresaID", visible: false, formato: "entero", mascara: "", key: false, suma: false, ancho: 100, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
     {campo: "empresaCodigo", titulo: "Empresa", visible: true, formato: "entero", mascara: "", key: false, suma: false, ancho: 80, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
     {campo: "empresaNombre", titulo: "Empresa Nombre", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 220, align: "left", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""}
-    ];
+    ]);
 
+    const [edicionesLocales, setEdicionesLocales] = useState(() => new Map());
+    const [celdasModificadas, setCeldasModificadas] = useState(() => new Set());
     const mostrarCheck=true;
     const [busquedaGrid,setBusquedaGrid] = useState("");
 
@@ -88,12 +93,29 @@ function CtbAsientosBQD({
         filtrosIniciales:filtrosDefault
     });
 
+    const datosEditables = useMemo(() => cargaAsientos.dataGrid.map(fila =>
+        edicionesLocales.get(claveEdicionLocal(fila)) ?? fila
+    ), [cargaAsientos.dataGrid, edicionesLocales]);
+
+    function actualizarFilaLocal({ filaOriginal, filaNueva, keyFila, cambios }) {
+        setEdicionesLocales(actual => new Map(actual).set(claveEdicionLocal(filaOriginal), filaNueva));
+        setCeldasModificadas(actual => new Set([
+            ...actual, ...cambios.map(cambio => `${keyFila}|${cambio.campo}`)
+        ]));
+    }
+
+    const consultar = useCallback((filtros) => {
+        setEdicionesLocales(new Map());
+        setCeldasModificadas(new Set());
+        return cargaAsientos.cargar(filtros);
+    }, [cargaAsientos.cargar]);
+
   return (
 
     <div className="asientosContent">
         <div className="contenedorFiltros">
             <FiltroAsientos
-                onFiltrar={cargaAsientos.cargar}
+                onFiltrar={consultar}
                 gridPreferencias={gridPreferencias}
                 busquedaGrid={busquedaGrid}
                 onBusquedaGridChange={setBusquedaGrid}
@@ -102,8 +124,12 @@ function CtbAsientosBQD({
 
 
         <div className="contenedorGrilla">
+            
             <Grid   columnasVisibles={columnasVisibles}
-                    dataGrid={cargaAsientos.dataGrid}
+                    dataGrid={datosEditables}
+                    editable={true}
+                    onRowChange={actualizarFilaLocal}
+                    celdasModificadas={celdasModificadas}
                     mostrarCheck={mostrarCheck}
                     cargando={cargaAsientos.cargando}
                     mostrarSinDatos={cargaAsientos.consultaEjecutada}
@@ -144,3 +170,4 @@ function CtbAsientosBQD({
 }
 
 export default CtbAsientosBQD;
+

@@ -1,84 +1,10 @@
-import { useEffect,useRef,useState } from "react";
 import InputComboBusqueda from "../InputComboBusqueda/InputComboBusqueda";
-import { cargarProveedores } from "../services/proveedoresService";
+import useProveedor from "./useProveedor";
 import iconFlechaC from "../../assets/iconFlechaC.png";
 
-function formatearProveedor(proveedor) {
-
-    if (!proveedor) {
-        return "";
-    }
-
-    return `${proveedor.proveedorCodigo} - ${proveedor.proveedorNombre}`;
-
-}
-
-function ComboProveedores({
-    titulo = "Proveedor",
-    valor,
-    empresaID,
-    onChange,
-    onEnter,
-    tabIndex
-}) {
-
-    const [texto,setTexto] = useState(formatearProveedor(valor));
-    const [proveedores,setProveedores] = useState([]);
-    const refLimpiezaPorEscritura = useRef(false);
-
-    useEffect(() => {
-        if (!valor && refLimpiezaPorEscritura.current) {
-            refLimpiezaPorEscritura.current = false;
-            return;
-        }
-
-        setTexto(formatearProveedor(valor));
-    }, [valor]);
-
-    useEffect(() => {
-
-        let cancelado = false;
-        const abortController = new AbortController();
-
-        async function buscarProveedores() {
-            if (texto.length < 2 || valor) {
-                setProveedores([]);
-                return;
-            }
-
-            const datos = await cargarProveedores(
-                texto,
-                empresaID,
-                abortController.signal
-            );
-
-            if (!cancelado) {
-                setProveedores(datos);
-            }
-        }
-
-        const timeoutBusqueda =
-            window.setTimeout(buscarProveedores,500);
-
-        return () => {
-            cancelado = true;
-            abortController.abort();
-            window.clearTimeout(timeoutBusqueda);
-        };
-
-    }, [texto,empresaID,valor]);
-
-    function cambiarTexto(nuevoTexto) {
-        setTexto(nuevoTexto);
-        refLimpiezaPorEscritura.current = true;
-        onChange(null);
-    }
-
-    function seleccionarProveedor(proveedor) {
-        setTexto(formatearProveedor(proveedor));
-        setProveedores([]);
-        onChange(proveedor);
-    }
+function ComboProveedores({ titulo = "Proveedor", valor, empresaID, onChange, onEnter, tabIndex }) {
+    const { texto, proveedores, cambiarTexto, seleccionarProveedor } =
+        useProveedor({ valor, empresaID, onChange });
 
     return (
         <InputComboBusqueda
@@ -95,7 +21,6 @@ function ComboProveedores({
             tabIndex={tabIndex}
         />
     );
-
 }
 
 export default ComboProveedores;

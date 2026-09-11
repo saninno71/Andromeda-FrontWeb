@@ -1,3 +1,4 @@
+import GridEditorCustom from "./GridEditorCustom";
 import { memo,useEffect,useLayoutEffect,useRef,useState } from "react";
 import { createPortal } from "react-dom";
 import { obtenerClaseTextoColumna } from "./gridEstilos";
@@ -220,6 +221,7 @@ function GridFila({
     celdasModificadas = null,
     filaEditando = false,
     filaDraft = null,
+    onDraftPatch,
     onDraftChange,
     onConfirmarEdicionFila,
     onCancelarEdicionFila,
@@ -275,6 +277,15 @@ function GridFila({
     function renderEditor(columna) {
         const valorEditando =
             filaDraft?.[columna.campo] ?? "";
+
+        const basicos = ["texto", "numero", "decimal", "fecha", "checkbox", "combo"];
+        if (columna.editor && !basicos.includes(columna.editor)) {
+            return <GridEditorCustom columna={columna} fila={filaDraft}
+                onPatch={onDraftPatch} abierto={comboAbiertoCampo === columna.campo}
+                onAbrir={() => setComboAbiertoCampo(columna.campo)}
+                onCerrar={() => setComboAbiertoCampo(null)}
+                onConfirmar={onConfirmarEdicionFila} onCancelar={onCancelarEdicionFila} />;
+        }
 
         if (columna.editor === "combo") {
             const opciones = columna.editorConfig?.items ?? [];

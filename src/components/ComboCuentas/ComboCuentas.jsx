@@ -1,84 +1,10 @@
-import { useEffect,useRef,useState } from "react";
 import InputComboBusqueda from "../InputComboBusqueda/InputComboBusqueda";
-import { cargarCuentas } from "../services/cuentasService";
+import useCuenta from "./useCuenta";
 import iconFlechaC from "../../assets/iconFlechaC.png";
 
-function formatearCuenta(cuenta) {
-
-    if (!cuenta) {
-        return "";
-    }
-
-    return `${cuenta.cuentaCodigo} - ${cuenta.cuentaNombre}`;
-
-}
-
-function ComboCuentas({
-    titulo = "Cuenta",
-    valor,
-    empresaID,
-    onChange,
-    onEnter,
-    tabIndex
-}) {
-
-    const [texto,setTexto] = useState(formatearCuenta(valor));
-    const [cuentas,setCuentas] = useState([]);
-    const refLimpiezaPorEscritura = useRef(false);
-
-    useEffect(() => {
-        if (!valor && refLimpiezaPorEscritura.current) {
-            refLimpiezaPorEscritura.current = false;
-            return;
-        }
-
-        setTexto(formatearCuenta(valor));
-    }, [valor]);
-
-    useEffect(() => {
-
-        let cancelado = false;
-        const abortController = new AbortController();
-
-        async function buscarCuentas() {
-            if (texto.length < 2 || valor) {
-                setCuentas([]);
-                return;
-            }
-
-            const datos = await cargarCuentas(
-                texto,
-                empresaID,
-                abortController.signal
-            );
-
-            if (!cancelado) {
-                setCuentas(datos);
-            }
-        }
-
-        const timeoutBusqueda =
-            window.setTimeout(buscarCuentas,500);
-
-        return () => {
-            cancelado = true;
-            abortController.abort();
-            window.clearTimeout(timeoutBusqueda);
-        };
-
-    }, [texto,empresaID,valor]);
-
-    function cambiarTexto(nuevoTexto) {
-        setTexto(nuevoTexto);
-        refLimpiezaPorEscritura.current = true;
-        onChange(null);
-    }
-
-    function seleccionarCuenta(cuenta) {
-        setTexto(formatearCuenta(cuenta));
-        setCuentas([]);
-        onChange(cuenta);
-    }
+function ComboCuentas({ titulo = "Cuenta", valor, empresaID, onChange, onEnter, tabIndex }) {
+    const { texto, cuentas, cambiarTexto, seleccionarCuenta } =
+        useCuenta({ valor, empresaID, onChange });
 
     return (
         <InputComboBusqueda
@@ -95,7 +21,6 @@ function ComboCuentas({
             tabIndex={tabIndex}
         />
     );
-
 }
 
 export default ComboCuentas;

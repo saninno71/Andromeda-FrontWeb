@@ -25,9 +25,6 @@ export async function cargarCuentas(textoBusqueda, empresaID, signal) {
             ")"
         ];
 
-        if (empresaID) {
-            filtros.push(`EmpresaID eq ${Number(empresaID)}`);
-        }
 
         const parametros = new URLSearchParams({
             "$filter":filtros.join(" and "),
@@ -42,18 +39,19 @@ export async function cargarCuentas(textoBusqueda, empresaID, signal) {
                 headers: {
                     "Content-Type":"application/json"
                 },
-                body: JSON.stringify({}),
+                body: JSON.stringify(empresaID ? { empresaID: Number(empresaID) } : {}),
                 signal
             }
         );
 
+        if (!response.ok) throw new Error(`No se pudieron cargar las cuentas (${response.status}).`);
         const data = await response.json();
         const cuentas = obtenerItemsOData(data);
 
         return cuentas.map((cuenta) => ({
-            cuentaID: cuenta.Id,
-            cuentaCodigo: cuenta.Codigo,
-            cuentaNombre: cuenta.Nombre
+            cuentaID: cuenta.Id ?? cuenta.id,
+            cuentaCodigo: cuenta.Codigo ?? cuenta.codigo,
+            cuentaNombre: cuenta.Nombre ?? cuenta.nombre
         }));
     }
     catch(error)
@@ -62,8 +60,7 @@ export async function cargarCuentas(textoBusqueda, empresaID, signal) {
             return [];
         }
 
-        console.error(error);
-        return [];
+        throw error;
     }
 
 }

@@ -1,3 +1,4 @@
+import { obtenerCambiosFila } from "./gridEditorCampos";
 import "./grid.css";
 import { useState,useRef,useEffect,useMemo,useCallback} from "react";
 import {
@@ -420,24 +421,17 @@ useEffect(() => {
 
     }
 
+    function cambiarDraftCampos(cambios) {
+        setFilaEditandoDraft(actual => ({ ...actual, ...cambios }));
+    }
+
     function confirmarEdicionFila() {
 
-        if (!filaEditandoKey || !filaEditandoOriginal || !filaEditandoDraft) {
+        if (filaEditandoKey == null || !filaEditandoOriginal || !filaEditandoDraft) {
             return false;
         }
 
-        const cambios =
-            columnasVisibles
-            .filter(columna => columna.editable === true)
-            .map(columna => ({
-                campo:columna.campo,
-                valorAnterior:filaEditandoOriginal[columna.campo],
-                valorNuevo:filaEditandoDraft[columna.campo],
-                columna
-            }))
-            .filter(cambio =>
-                cambio.valorAnterior !== cambio.valorNuevo
-            );
+        const cambios = obtenerCambiosFila(filaEditandoOriginal, filaEditandoDraft, columnasVisibles);
 
         if (cambios.length > 0) {
             onRowChange?.({
@@ -773,6 +767,7 @@ useEffect(() => {
                                         : null
                                 }
                                 onDraftChange={cambiarDraftFila}
+                                onDraftPatch={cambiarDraftCampos}
                                 onConfirmarEdicionFila={confirmarEdicionFila}
                                 onCancelarEdicionFila={cancelarEdicionFila}
                                 onClickSimpleFila={manejarClickSimpleFila}

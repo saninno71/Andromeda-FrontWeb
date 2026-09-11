@@ -1,10 +1,10 @@
 import "./MasFiltrosAsientos.css";
 
-import { useEffect,useRef,useState } from "react";
+import { useEffect,useRef } from "react";
 
 import BotonToolbar from "../../components/BotonToolbar/BotonToolbar";
 import InputFecha from "../../components/InputFecha/InputFecha";
-import InputCombo from "../../components/InputCombo/InputCombo";
+import ComboNumeraciones from "../../components/ComboNumeraciones/ComboNumeraciones";
 import ComboEmpresas from "../../components/ComboEmpresas/ComboEmpresas";
 import ComboCuentas from "../../components/ComboCuentas/ComboCuentas";
 import ComboClientes from "../../components/ComboClientes/ComboClientes";
@@ -15,10 +15,8 @@ import {
     enfocarControl,
     ESTILO_ENTRADA_FOCO
 } from "../../components/foco/tabIndex";
-import { cargarNumeraciones } from "../../components/services/numeracionService";
 
 import btnCalendar from "../../assets/btnCalendar.png";
-import iconFlechaC from "../../assets/iconFlechaC.png";
 
 const tabIndexMasFiltrosAsientos = crearTabIndexConEntrada([
     "fechaDesde",
@@ -71,19 +69,8 @@ function MasFiltrosAsientos({
     const refFechaDesde = useRef(null);
     const refBotonFiltrar = useRef(null);
     const refModal = useRef(null);
-    const [numeraTipos,setNumeraTipos] = useState([]);
+    const refCuerpo = useRef(null);
     const tabIndexControles = tabIndexMasFiltrosAsientos.controles;
-
-    useEffect(() => {
-
-        async function obtenerNumeraciones() {
-            const datos = await cargarNumeraciones();
-            setNumeraTipos(datos);
-        }
-
-        obtenerNumeraciones();
-
-    }, []);
 
     useEffect(() => {
 
@@ -209,6 +196,29 @@ function MasFiltrosAsientos({
 
     }, [abierto]);
 
+    useEffect(() => {
+        if (!abierto) return;
+
+        function manejarScrollModal(evento) {
+            if (evento.defaultPrevented || evento.altKey || evento.ctrlKey || evento.metaKey) return;
+            const desplazamientos = {
+                ArrowDown: [0, 40], ArrowUp: [0, -40],
+                ArrowRight: [40, 0], ArrowLeft: [-40, 0]
+            };
+            const desplazamiento = desplazamientos[evento.key];
+            if (!desplazamiento) return;
+            // Los inputs, combos y calendarios conservan su propio teclado.
+            if (refModal.current?.contains(evento.target) && evento.target.closest?.(
+                'input, textarea, select, [contenteditable="true"], .inputCombo, .inputComboBusqueda, .react-datepicker'
+            )) return;
+            evento.preventDefault();
+            refCuerpo.current?.scrollBy({ left: desplazamiento[0], top: desplazamiento[1] });
+        }
+
+        document.addEventListener("keydown", manejarScrollModal);
+        return () => document.removeEventListener("keydown", manejarScrollModal);
+    }, [abierto]);
+
     function filtrarConEnterBoton(evento) {
 
         if (evento.key !== "Enter") {
@@ -230,6 +240,9 @@ function MasFiltrosAsientos({
             <div
                 className="masFiltrosModal"
                 ref={refModal}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Más Filtros"
                 onContextMenu={(evento) => evento.preventDefault()}
             >
 
@@ -247,7 +260,7 @@ function MasFiltrosAsientos({
                     </div>
                 </div>
 
-                <div className="masFiltrosCuerpo">
+                <div className="masFiltrosCuerpo" ref={refCuerpo}>
 
                     <div className="masFiltrosFormulario">
 
@@ -364,14 +377,10 @@ function MasFiltrosAsientos({
                         </div>
 
                         <div className="masFiltrosControl580">
-                            <InputCombo
+                            <ComboNumeraciones
                                 titulo="Numeración"
-                                valor={numeraTipoSeleccionado?.descripcion || ""}
-                                items={numeraTipos}
-                                campoID="numeraTipoID"
-                                campoDescripcion="descripcion"
+                                valor={numeraTipoSeleccionado}
                                 onChange={onNumeraTipoChange}
-                                icono={<img src={iconFlechaC} />}
                                 tabIndex={tabIndexControles.numeraTipo}
                             />
                         </div>

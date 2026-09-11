@@ -99,6 +99,10 @@ export function crearNavegacionGrid({
 
     function manejarTeclaScroll(e) {
 
+        const modalActivo = document.querySelector('[role="dialog"][aria-modal="true"]');
+        if (modalActivo && !modalActivo.contains(refGrilla.current)) return;
+        if (e.defaultPrevented) return;
+
         if (hayControlDesplegado()) {
             return;
         }
