@@ -19,113 +19,95 @@ export async function cargarAsientos(
     opciones = {}
 )
 {
-    try
-    {
-        const {
-            top = TAMANO_PAGINA_ASIENTOS,
-            skip = 0,
-            incluirTotal = false,
-            signal = null
-        } = opciones;
+    const {
+        top = TAMANO_PAGINA_ASIENTOS,
+        skip = 0,
+        incluirTotal = false,
+        signal = null
+    } = opciones;
 
-        const {
-            fechaDesde,
-            fechaHasta,
-            empresaID,
-            cuentaID,
-            detalle,
-            clienteID,
-            proveedorID,
-            numeroDesde,
-            numeroHasta,
-            numeraTipoID
-        } = filtrosConsulta;
+    const {
+        fechaDesde,
+        fechaHasta,
+        empresaID,
+        cuentaID,
+        detalle,
+        clienteID,
+        proveedorID,
+        numeroDesde,
+        numeroHasta,
+        numeraTipoID
+    } = filtrosConsulta;
 
-        const filtro = {};
-        const filtrosOData = [];
+    const filtro = {};
+    const filtrosOData = [];
 
-        if (fechaDesde)
-            filtro.fechaDesde = fechaDesde;
+    if (fechaDesde)
+        filtro.fechaDesde = fechaDesde;
 
-        if (fechaHasta)
-            filtro.fechaHasta = fechaHasta;
+    if (fechaHasta)
+        filtro.fechaHasta = fechaHasta;
 
-        if (empresaID)
-           filtro.empresaID = `${empresaID}`;
+    if (empresaID)
+       filtro.empresaID = `${empresaID}`;
 
-        if (cuentaID)
-           filtro.cuentaID = cuentaID;
+    if (cuentaID)
+       filtro.cuentaID = cuentaID;
 
-        if (detalle)
-           filtro.detalle = detalle;
+    if (detalle)
+       filtro.detalle = detalle;
 
-        if (clienteID) {
-           filtrosOData.push(
-               `(debeClienteID eq ${Number(clienteID)} or haberClienteID eq ${Number(clienteID)})`
-           );
-        }
-
-        if (proveedorID) {
-           filtrosOData.push(
-               `(debeProveedorID eq ${Number(proveedorID)} or haberProveedorID eq ${Number(proveedorID)})`
-           );
-        }
-
-        if (numeroDesde)
-           filtro.numeroDesde = numeroDesde;
-
-        if (numeroHasta)
-           filtro.numeroHasta = numeroHasta;
-
-        if (numeraTipoID)
-           filtro.numeraTipoID = numeraTipoID;
-
-        const parametros = new URLSearchParams({
-            "$top":String(top),
-            "$skip":String(skip),
-            "$count":incluirTotal ? "true" : "false"
-        });
-
-        if (filtrosOData.length > 0) {
-            parametros.set("$filter",filtrosOData.join(" and "));
-        }
-
-        const url =
-            `${API_URL}/api/contabilidad/asientos/odata/CstctbAsientos?${parametros.toString()}`;
-
-        const response = await fetch(
-            url,
-            {
-                method:"POST",
-                headers: {
-                    "Content-Type":"application/json"
-                },
-                signal,
-                body: JSON.stringify(filtro)
-            }
-        );
-
-        const data = await response.json();
-
-        return {
-            items:obtenerItemsOData(data),
-            total:obtenerTotalOData(data)
-        };
+    if (clienteID) {
+       filtrosOData.push(
+           `(debeClienteID eq ${Number(clienteID)} or haberClienteID eq ${Number(clienteID)})`
+       );
     }
-    catch(error)
 
-    {
-        if (error.name === "AbortError") {
-            return {
-                items:[],
-                total:null
-            };
-        }
-
-        console.error(error);
-        return {
-            items:[],
-            total:null
-        };
+    if (proveedorID) {
+       filtrosOData.push(
+           `(debeProveedorID eq ${Number(proveedorID)} or haberProveedorID eq ${Number(proveedorID)})`
+       );
     }
+
+    if (numeroDesde)
+       filtro.numeroDesde = numeroDesde;
+
+    if (numeroHasta)
+       filtro.numeroHasta = numeroHasta;
+
+    if (numeraTipoID)
+       filtro.numeraTipoID = numeraTipoID;
+
+    const parametros = new URLSearchParams({
+        "$top":String(top),
+        "$skip":String(skip),
+        "$count":incluirTotal ? "true" : "false"
+    });
+
+    if (filtrosOData.length > 0) {
+        parametros.set("$filter",filtrosOData.join(" and "));
+    }
+
+    const url =
+        `${API_URL}/api/contabilidad/asientos/odata/CstctbAsientos?${parametros.toString()}`;
+
+    const response = await fetch(
+        url,
+        {
+            method:"POST",
+            headers: {
+                "Content-Type":"application/json"
+            },
+            signal,
+            body: JSON.stringify(filtro)
+        }
+    );
+
+    if (!response.ok) throw new Error(`No se pudieron consultar los asientos (${response.status}).`);
+    const data = await response.json();
+
+    return {
+        items:obtenerItemsOData(data),
+        total:obtenerTotalOData(data)
+    };
 }

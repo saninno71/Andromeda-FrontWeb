@@ -48,6 +48,8 @@ function Grid({
     editable = false,
     onCellChange,
     onRowChange,
+    onEdicionChange,
+    onOrdenChange,
     onDeleteRow,
     celdasModificadas = null,
     altoFila = 30
@@ -140,6 +142,14 @@ function Grid({
         setFilaSeleccionada(fila);
         setMostrarMenuFila(true);
     }, [filaSeleccionada,filaEditandoKey,cerrarMenuFila]);
+
+    useEffect(() => {
+        onEdicionChange?.(filaEditandoKey == null ? null : {
+            keyFila:filaEditandoKey, original:filaEditandoOriginal, borrador:filaEditandoDraft
+        });
+    }, [filaEditandoKey, filaEditandoOriginal, filaEditandoDraft, onEdicionChange]);
+
+    useEffect(() => { onOrdenChange?.(ordenamiento); }, [ordenamiento, onOrdenChange]);
 
     //determina si es una fila seleccioanda
     const obtenerClaseFila = useCallback(function obtenerClaseFila(

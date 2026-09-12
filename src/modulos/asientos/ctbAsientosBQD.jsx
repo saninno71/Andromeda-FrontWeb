@@ -1,23 +1,14 @@
 import { configurarEditoresAsientos } from "./asientosEditores";
 import "./ctbAsientosBQD.css";
 
-import { useState, useMemo, useCallback } from "react";
+import { useAsientos } from "./useAsientos.js";
 //componente grilla
 import Grid from "../../components/grid/Grid";
-import { useGridCargaPaginada } from "../../components/grid/useGridCargaPaginada";
+
 import { useGridPreferencias } from "../../components/grid/useGridPreferencias";
 import ModalInfo from "../../components/ModalInfo/ModalInfo";
 //componente filtros
 import FiltroAsientos from "./FiltroAsientos";
-
-import {
-    cargarAsientos,
-    CONFIG_CARGA_ASIENTOS
-} from "./asientosService";
-import { primerDiaMesActual } from "../../components/fechas";
-import { fechaAEntero } from "../../components/updFormatos";
-
-const claveEdicionLocal = fila => JSON.stringify([fila.comprobanteID, fila.monedaCodigo]);
 
 const GRID_STORAGE_KEY = "andromeda:grid:asientos:views";
 
@@ -71,54 +62,22 @@ function CtbAsientosBQD({
     {campo: "empresaNombre", titulo: "Empresa Nombre", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 220, align: "left", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""}
     ]);
 
-    const [edicionesLocales, setEdicionesLocales] = useState(() => new Map());
-    const [celdasModificadas, setCeldasModificadas] = useState(() => new Set());
-    const mostrarCheck=true;
-    const [busquedaGrid,setBusquedaGrid] = useState("");
-
-    const gridPreferencias = useGridPreferencias({
-        storageKey:GRID_STORAGE_KEY
-    });
-
-    const filtrosDefault = {
-        fechaDesde: fechaAEntero(primerDiaMesActual()),
-        fechaHasta: 0,
-        empresaID: 0
-    };
-
-    const cargaAsientos = useGridCargaPaginada({
-        cargarPagina:cargarAsientos,
-        configuracion:CONFIG_CARGA_ASIENTOS,
-        ejecutarConsultaInicial,
-        filtrosIniciales:filtrosDefault
-    });
-
-    const datosEditables = useMemo(() => cargaAsientos.dataGrid.map(fila =>
-        edicionesLocales.get(claveEdicionLocal(fila)) ?? fila
-    ), [cargaAsientos.dataGrid, edicionesLocales]);
-
-    function actualizarFilaLocal({ filaOriginal, filaNueva, keyFila, cambios }) {
-        setEdicionesLocales(actual => new Map(actual).set(claveEdicionLocal(filaOriginal), filaNueva));
-        setCeldasModificadas(actual => new Set([
-            ...actual, ...cambios.map(cambio => `${keyFila}|${cambio.campo}`)
-        ]));
-    }
-
-    const consultar = useCallback((filtros) => {
-        setEdicionesLocales(new Map());
-        setCeldasModificadas(new Set());
-        return cargaAsientos.cargar(filtros);
-    }, [cargaAsientos.cargar]);
+    const { modelo, estado, filas:datosEditables, celdasModificadas } = useAsientos({ ejecutarConsultaInicial });
+    const cargaAsientos = estado.consulta;
+    const mostrarCheck = true;
+    const busquedaGrid = estado.vista.busqueda;
+    const gridPreferencias = useGridPreferencias({ storageKey:GRID_STORAGE_KEY });
 
   return (
 
     <div className="asientosContent">
         <div className="contenedorFiltros">
             <FiltroAsientos
-                onFiltrar={consultar}
+                modelo={modelo}
+                filtros={estado.filtros}
                 gridPreferencias={gridPreferencias}
                 busquedaGrid={busquedaGrid}
-                onBusquedaGridChange={setBusquedaGrid}
+                onBusquedaGridChange={modelo.actualizarBusqueda}
             />
         </div>
 
@@ -128,7 +87,9 @@ function CtbAsientosBQD({
             <Grid   columnasVisibles={columnasVisibles}
                     dataGrid={datosEditables}
                     editable={true}
-                    onRowChange={actualizarFilaLocal}
+                    onRowChange={modelo.actualizarFilaLocal}
+                    onEdicionChange={modelo.actualizarEdicion}
+                    onOrdenChange={modelo.actualizarOrden}
                     celdasModificadas={celdasModificadas}
                     mostrarCheck={mostrarCheck}
                     cargando={cargaAsientos.cargando}
@@ -145,6 +106,7 @@ function CtbAsientosBQD({
             />
         </div>
 
+        {cargaAsientos.error && <p role="alert">{cargaAsientos.error}</p>}
         <ModalInfo
             abierto={Boolean(cargaAsientos.avisoTopeRegistros)}
             titulo="Cantidad de registros"
@@ -160,7 +122,7 @@ function CtbAsientosBQD({
                     )
                     : ""
             }
-            onCerrar={cargaAsientos.cerrarAvisoTopeRegistros}
+            onCerrar={modelo.cerrarAviso}
         />
 
 

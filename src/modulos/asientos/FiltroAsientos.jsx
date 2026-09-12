@@ -26,10 +26,10 @@ import btnVFiltros from "../../assets/btnVFiltros.png";
 import btnMFiltros from "../../assets/btnMFiltros.png";
 import btnRefresh from "../../assets/btnRefresh.png";
 
-import {fechaAEntero} from "../../components/updFormatos"
-import { primerDiaMesActual } from "../../components/fechas";
 
-import { useCallback,useRef,useState,useEffect  } from "react";
+
+
+import { useRef,useState,useEffect  } from "react";
 
 const tabIndexFiltrosAsientos = crearTabIndexConEntrada([
     "fechaDesde",
@@ -45,10 +45,11 @@ const tabIndexFiltrosAsientos = crearTabIndexConEntrada([
     "ayuda",
     "grilla"
 ]);
-const FECHA_DESDE_DEFAULT = primerDiaMesActual();
+
 
 function FiltroAsientos({
-    onFiltrar,
+    modelo,
+    filtros,
     gridPreferencias,
     busquedaGrid,
     onBusquedaGridChange
@@ -56,138 +57,24 @@ function FiltroAsientos({
 
 {
 
-// fecha default    
-const [fechaDesde,setFechaDesde] = useState(FECHA_DESDE_DEFAULT);
-const [fechaHasta,setFechaHasta] = useState(null);
-const [empresaSeleccionada,setEmpresaSeleccionada] = useState(null);
-const [cuentaSeleccionada,setCuentaSeleccionada] = useState(null);
+const { fechaDesde, fechaHasta, empresaSeleccionada, cuentaSeleccionada, detalle, clienteSeleccionado, proveedorSeleccionado, cajaBancaria, numeraTipoSeleccionado, numeroDesde, numeroHasta } = filtros;
 const [mostrarChipsFiltros,setMostrarChipsFiltros] = useState(true);
 const [mostrarMasFiltros,setMostrarMasFiltros] = useState(false);
-const [detalle,setDetalle] = useState("");
-const [clienteSeleccionado,setClienteSeleccionado] = useState(null);
-const [proveedorSeleccionado,setProveedorSeleccionado] = useState(null);
-const [cajaBancaria,setCajaBancaria] = useState("");
-const [numeraTipoSeleccionado,setNumeraTipoSeleccionado] = useState(null);
-const [numeroDesde,setNumeroDesde] = useState("");
-const [numeroHasta,setNumeroHasta] = useState("");
 const refFechaDesde = useRef(null);
 const refBotonFiltrar = useRef(null);
-const filtrosActualesRef = useRef({
-    fechaDesde:FECHA_DESDE_DEFAULT,
-    fechaHasta:null,
-    empresaSeleccionada:null,
-    cuentaSeleccionada:null,
-    detalle:"",
-    clienteSeleccionado:null,
-    proveedorSeleccionado:null,
-    numeraTipoID:null,
-    numeroDesde:"",
-    numeroHasta:""
-});
 const tabIndexControles = tabIndexFiltrosAsientos.controles;
-
-const filtrar = useCallback(async function filtrar() {
-
-    const filtrosActuales =
-        filtrosActualesRef.current;
-
-    onFiltrar({
-        fechaDesde: fechaAEntero(filtrosActuales.fechaDesde),
-        fechaHasta: fechaAEntero(filtrosActuales.fechaHasta),
-        empresaID: filtrosActuales.empresaSeleccionada?.empresaID,
-        cuentaID: filtrosActuales.cuentaSeleccionada?.cuentaID,
-        detalle: filtrosActuales.detalle,
-        clienteID: filtrosActuales.clienteSeleccionado?.clienteID,
-        proveedorID: filtrosActuales.proveedorSeleccionado?.proveedorID,
-        numeraTipoID: filtrosActuales.numeraTipoID,
-        numeroDesde: filtrosActuales.numeroDesde
-            ? Number(filtrosActuales.numeroDesde)
-            : null,
-        numeroHasta: filtrosActuales.numeroHasta
-            ? Number(filtrosActuales.numeroHasta)
-            : null
-    });
-
-}, [onFiltrar]);
-
-function actualizarFiltroActual(campo,valor) {
-
-    filtrosActualesRef.current = {
-        ...filtrosActualesRef.current,
-        [campo]:valor
-    };
-
-}
-
-function cambiarFechaDesde(fecha) {
-
-    setFechaDesde(fecha);
-    actualizarFiltroActual("fechaDesde",fecha);
-
-}
-
-function cambiarFechaHasta(fecha) {
-
-    setFechaHasta(fecha);
-    actualizarFiltroActual("fechaHasta",fecha);
-
-}
-
-function cambiarEmpresa(empresa) {
-
-    setEmpresaSeleccionada(empresa);
-    actualizarFiltroActual("empresaSeleccionada",empresa);
-
-}
-
-function cambiarCuentaSeleccionada(cuenta) {
-
-    setCuentaSeleccionada(cuenta);
-    actualizarFiltroActual("cuentaSeleccionada",cuenta);
-
-}
-
-function cambiarProveedorSeleccionado(proveedor) {
-
-    setProveedorSeleccionado(proveedor);
-    actualizarFiltroActual("proveedorSeleccionado",proveedor);
-
-}
-
-function cambiarClienteSeleccionado(cliente) {
-
-    setClienteSeleccionado(cliente);
-    actualizarFiltroActual("clienteSeleccionado",cliente);
-
-}
-
-function cambiarDetalle(valor) {
-
-    setDetalle(valor);
-    actualizarFiltroActual("detalle",valor);
-
-}
-
-function cambiarNumeraTipo(item) {
-
-    setNumeraTipoSeleccionado(item);
-    actualizarFiltroActual("numeraTipoID",item?.numeraTipoID || null);
-
-}
-
-function cambiarNumeroDesde(valor) {
-
-    setNumeroDesde(valor);
-    actualizarFiltroActual("numeroDesde",valor);
-
-}
-
-function cambiarNumeroHasta(valor) {
-
-    setNumeroHasta(valor);
-    actualizarFiltroActual("numeroHasta",valor);
-
-}
+const filtrar = modelo.consultar;
+const cambiarFechaDesde = valor => modelo.actualizarFiltro("fechaDesde", valor);
+const cambiarFechaHasta = valor => modelo.actualizarFiltro("fechaHasta", valor);
+const cambiarEmpresa = valor => modelo.actualizarFiltro("empresaSeleccionada", valor);
+const cambiarCuentaSeleccionada = valor => modelo.actualizarFiltro("cuentaSeleccionada", valor);
+const cambiarDetalle = valor => modelo.actualizarFiltro("detalle", valor);
+const cambiarClienteSeleccionado = valor => modelo.actualizarFiltro("clienteSeleccionado", valor);
+const cambiarProveedorSeleccionado = valor => modelo.actualizarFiltro("proveedorSeleccionado", valor);
+const setCajaBancaria = valor => modelo.actualizarFiltro("cajaBancaria", valor);
+const cambiarNumeraTipo = valor => modelo.actualizarFiltro("numeraTipoSeleccionado", valor);
+const cambiarNumeroDesde = valor => modelo.actualizarFiltro("numeroDesde", valor);
+const cambiarNumeroHasta = valor => modelo.actualizarFiltro("numeroHasta", valor);
 
 function filtrarDesdeMasFiltros() {
 
@@ -223,7 +110,6 @@ useEffect(() => {
                 tabIndexControles.filtrar
             ],
             selectoresPermitidos:[
-                ".grilla",
                 ".filtroActivoChip"
             ],
             accion:filtrar
