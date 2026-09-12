@@ -29,6 +29,7 @@ function GridMenuFila({
     const refMenu = useRef(null);
     const refIconos = useRef(null);
     const [anchoMenu,setAnchoMenu] = useState(0);
+    const [anchoVisible,setAnchoVisible] = useState(anchoContenedor);
 
     useLayoutEffect(() => {
 
@@ -36,9 +37,21 @@ function GridMenuFila({
             return;
         }
 
-        setAnchoMenu(refIconos.current?.scrollWidth ?? 0);
+        function medirEspacioVisible() {
+            setAnchoMenu(refIconos.current?.scrollWidth ?? 0);
+            const contenedor = refMenu.current?.offsetParent;
+            const izquierda = contenedor?.getBoundingClientRect().left ?? 0;
+            setAnchoVisible(Math.max(0, Math.min(anchoContenedor, document.documentElement.clientWidth - izquierda)));
+        }
+        medirEspacioVisible();
+        window.addEventListener("resize", medirEspacioVisible);
+        window.addEventListener("scroll", medirEspacioVisible, true);
+        return () => {
+            window.removeEventListener("resize", medirEspacioVisible);
+            window.removeEventListener("scroll", medirEspacioVisible, true);
+        };
 
-    }, [mostrarMenuFila]);
+    }, [mostrarMenuFila, anchoContenedor]);
 
     if (!filaSeleccionada || !mostrarMenuFila) {
         return null;
@@ -46,7 +59,7 @@ function GridMenuFila({
 
     const margenDerecho = 12;
     const limiteVisibleDerecho =
-        scrollLeft + anchoContenedor - margenDerecho;
+        scrollLeft + anchoVisible - margenDerecho;
     const limiteContenidoDerecho =
         anchoContenido - margenDerecho;
     const posicionDerecha =

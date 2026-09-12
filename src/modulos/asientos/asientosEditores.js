@@ -29,6 +29,10 @@ export function configurarEditoresAsientos(columnas) {
                 numeraTipoID: "numeraTipoID", descripcion: "numeraTipoSimbolo"
             }};
         }
+        if (campo === "fecha") {
+            editor = "calendario";
+            editorConfig = { campoID: "fecha", atributoVisible: "fecha", campos: { fecha: "fecha" } };
+        }
         if (editor) return { ...columna, editable: true, editor, editorConfig };
         const basicos = { detalle: "texto", numero: "numero", debeImporte: "decimal", haberImporte: "decimal" };
         return basicos[campo] ? { ...columna, editable: true, editor: basicos[campo] } : columna;

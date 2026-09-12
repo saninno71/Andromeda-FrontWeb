@@ -36,7 +36,10 @@ const InputFecha = forwardRef(function InputFecha({
     icono,
     onChange,
     onEnter,
-    tabIndex
+    tabIndex,
+    variante = "formulario",
+    onCancelar,
+    portalId
 },ref)
 
 {
@@ -158,6 +161,12 @@ const InputFecha = forwardRef(function InputFecha({
 
     function manejarTecla(e) {
 
+        if (variante === "celda" && e.key === "Escape") {
+            e.preventDefault();
+            e.stopPropagation();
+            onCancelar?.();
+            return;
+        }
         if (e.key === "Enter") {
             e.stopPropagation();
 
@@ -167,7 +176,7 @@ const InputFecha = forwardRef(function InputFecha({
                 );
 
             if (calendarioAbierto) {
-                refFiltrarLuegoDeCambio.current = true;
+                refFiltrarLuegoDeCambio.current = variante !== "celda";
                 return;
             }
 
@@ -181,7 +190,9 @@ const InputFecha = forwardRef(function InputFecha({
 
     return (
 
-        <div className="inputFecha" ref={contenedorRef}>
+        <div className={`inputFecha ${variante === "celda" ? "inputFechaCelda" : ""}`} ref={contenedorRef}
+            onClick={variante === "celda" ? e => e.stopPropagation() : undefined}
+            onKeyDown={variante === "celda" ? e => e.stopPropagation() : undefined}>
 
             <div className="inputFechaContenido">
 
@@ -193,6 +204,10 @@ const InputFecha = forwardRef(function InputFecha({
 
                     <DatePicker
                         ref={datePickerRef}
+                        portalId={portalId}
+                        popperClassName={variante === "celda" ? "inputFechaCeldaPopper" : undefined}
+                        onFocus={variante === "celda" ? e => e.target.select() : undefined}
+                        onInputClick={variante === "celda" ? () => contenedorRef.current?.querySelector("input")?.select() : undefined}
                         selected={valor}
                         value={textoFecha}
                         onChange={manejarCambio}

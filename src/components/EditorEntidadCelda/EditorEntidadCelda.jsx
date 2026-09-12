@@ -7,7 +7,7 @@ export default function EditorEntidadCelda({ texto, items, campoID, campoCodigo,
     onConfirmar, onCancelar, etiqueta, textoSeleccionado, mensajeVacio = "Sin resultados" }) {
     const refInput = useRef(null);
     const refLista = useRef(null);
-    const [filtro, setFiltro] = useState("");
+    const [filtro, setFiltro] = useState(null);
     const [indice, setIndice] = useState(0);
     const [posicion, setPosicion] = useState(null);
     const remoto = typeof cambiarTexto === "function";
@@ -15,7 +15,7 @@ export default function EditorEntidadCelda({ texto, items, campoID, campoCodigo,
         ? `${item[campoCodigo] ?? ""} - ${item[campoNombre] ?? ""}`
         : (item[campoNombre] ?? "");
     const opciones = remoto ? items : items.filter(item =>
-        mostrarTexto(item).toLowerCase().includes(filtro.toLowerCase()));
+        mostrarTexto(item).toLowerCase().includes((filtro ?? "").toLowerCase()));
     const activo = Math.max(0, Math.min(indice, opciones.length - 1));
 
     useLayoutEffect(() => {
@@ -30,6 +30,7 @@ export default function EditorEntidadCelda({ texto, items, campoID, campoCodigo,
                 top: rect.bottom + altura > window.innerHeight ? Math.max(0, rect.top - altura) : rect.bottom });
         }
         ubicar();
+        refInput.current?.select();
         window.addEventListener("resize", ubicar);
         window.addEventListener("scroll", ubicar, true);
         return () => {
@@ -43,7 +44,7 @@ export default function EditorEntidadCelda({ texto, items, campoID, campoCodigo,
 
     function elegir(item) {
         seleccionar(item);
-        setFiltro("");
+        setFiltro(null);
         onCerrar();
     }
     function tecla(e) {
@@ -62,8 +63,9 @@ export default function EditorEntidadCelda({ texto, items, campoID, campoCodigo,
     }
     return <div className="editorEntidadCelda" onClick={e => e.stopPropagation()}>
         <input ref={refInput} aria-label={etiqueta} role="combobox" aria-expanded={abierto}
-            value={remoto ? (textoSeleccionado ?? texto) : (abierto ? filtro : (textoSeleccionado ?? texto))}
-            onFocus={() => { setFiltro(""); setIndice(0); onAbrir(); }}
+            value={remoto ? (textoSeleccionado ?? texto) : (abierto ? (filtro ?? textoSeleccionado ?? texto) : (textoSeleccionado ?? texto))}
+            onFocus={() => { setFiltro(null); setIndice(0); onAbrir(); }}
+            onClick={e => { e.stopPropagation(); e.currentTarget.select(); }}
             onBlur={onCerrar} onKeyDown={tecla}
             onChange={e => { setIndice(0); onAbrir(); remoto ? cambiarTexto(e.target.value) : setFiltro(e.target.value); }} />
         <button type="button" tabIndex={-1} aria-label={`Abrir ${etiqueta}`}
