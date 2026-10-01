@@ -1,0 +1,29 @@
+.abmIndicadorModo {
+    display:flex;
+    align-items:center;
+    gap:9px;
+    padding-right:10px;
+    color:#666;
+    font:12px Inter,Arial,sans-serif;
+    white-space:nowrap;
+}
+
+.abmIndicadorModoPunto {
+    width:11px;
+    height:11px;
+    flex:0 0 11px;
+    border-radius:50%;
+    background:currentColor;
+}
+
+.abmIndicadorModoAlta .abmIndicadorModoPunto {
+    color:#2dbf5b;
+}
+
+.abmIndicadorModoEdicion .abmIndicadorModoPunto {
+    color:#00aeef;
+}
+
+.abmIndicadorModoConsulta .abmIndicadorModoPunto {
+    color:#888;
+}

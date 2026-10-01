@@ -1,6 +1,6 @@
 import { obtenerCambiosFila } from "./gridEditorCampos";
 import "./grid.css";
-import { useState,useRef,useEffect,useMemo,useCallback} from "react";
+import { useState,useRef,useEffect,useMemo,useCallback,useImperativeHandle} from "react";
 import {
     DndContext,
     closestCenter
@@ -22,6 +22,7 @@ import {useGridDragColumnas} from "./useGridDragColumnas";
 import {crearScrollGrid} from "./gridScroll";
 import GridTotalesVista from "./GridTotalesVista";
 import GridMenuFila from "./GridMenuFila";
+import { ACCIONES_MENU_FILA_DEFAULT } from "./gridMenuAcciones";
 import GridFila from "./GridFila";
 import {useGridVirtualizacion} from "./useGridVirtualizacion";
 import {
@@ -29,6 +30,14 @@ import {
     obtenerClaseFilaMenu,
     obtenerEstiloColumna
 } from "./gridEstilos";
+import { aplicarDependenciasColumnasCalculadas } from "./gridValores.js";
+import { separarFilasAlFinal } from "./gridFilasAlFinal.js";
+import {
+    calcularScrollFilaVisible,
+    calcularScrollIndiceFila
+} from "./gridVisibilidadFila.js";
+
+const FILAS_AL_FINAL_VACIAS = [];
 
 function Grid({
     columnasVisibles,
@@ -46,24 +55,36 @@ function Grid({
     onLayoutChange,
     textoBusqueda = "",
     editable = false,
+    accionesMenuFila = ACCIONES_MENU_FILA_DEFAULT,
+    onEditarRegistro,
+    onVerRegistro,
     onCellChange,
     onRowChange,
     onEdicionChange,
     onOrdenChange,
     onDeleteRow,
     celdasModificadas = null,
-    altoFila = 30
+    ajustarColumnasAlAncho = false,
+    altoFila = 30,
+    demoraIndicadorCargaMs = 0,
+    formatoCantidadRegistros = "cargados-total",
+    ajustarAlturaAContenido = false,
+    alturaMinima = 0,
+    contextoCalculos = null,
+    filasAlFinal = FILAS_AL_FINAL_VACIAS,
+    controlNavegacionRef = null,
+    onNavegacionChange
 }) {
 
      const ANCHO_COLUMNA_CHECK = 26;
      const ANCHO_MINIMO_COLUMNA = 12;
      const ANCHO_SCROLL_VERTICAL = 8;
-     const ANCHO_ESPACIO_FINAL = 40;
+     const ANCHO_ESPACIO_FINAL = ajustarColumnasAlAncho ? 0 : 40;
      const estiloEspacioFinal = useMemo(() => ({
         width: ANCHO_ESPACIO_FINAL + "px",
         minWidth: ANCHO_ESPACIO_FINAL + "px",
         maxWidth: ANCHO_ESPACIO_FINAL + "px"
-     }), []);
+     }), [ANCHO_ESPACIO_FINAL]);
 
     // ----------------------------------------------------------------------
     // VARIABLES DE ESTADO PARA FORZAR RENDERIZADOS y VARIABLES DE REFERENCIA
@@ -77,6 +98,7 @@ function Grid({
     const refScrollVertical = useRef(null);
     const refGrilla = useRef(null);
     const refPrimeraCeldaDatos = useRef(null);
+    const animacionUbicacionFila = useRef(null);
 
     //variables de estado para adminsitrar la visualización del menu flotante
     const [filaSeleccionada,setFilaSeleccionada] = useState(null);
@@ -85,13 +107,31 @@ function Grid({
     const [filaEditandoKey,setFilaEditandoKey] = useState(null);
     const [filaEditandoOriginal,setFilaEditandoOriginal] = useState(null);
     const [filaEditandoDraft,setFilaEditandoDraft] = useState(null);
+    const [campoFocoEdicion,setCampoFocoEdicion] = useState(null);
+    const [mostrarIndicadorCarga,setMostrarIndicadorCarga] = useState(false);
+
+    const ocultarMenuFila = useCallback(function ocultarMenuFila() {
+        setMostrarMenuFila(false);
+    }, []);
+
+    useEffect(() => {
+        const demora = cargando
+            ? Math.max(0, Number(demoraIndicadorCargaMs) || 0)
+            : 0;
+        const temporizador = window.setTimeout(
+            () => setMostrarIndicadorCarga(Boolean(cargando)),
+            demora
+        );
+
+        return () => window.clearTimeout(temporizador);
+    }, [cargando,demoraIndicadorCargaMs]);
 
     const cerrarMenuFila = useCallback(function cerrarMenuFila() {
 
-        setMostrarMenuFila(false);
+        ocultarMenuFila();
         setFilaSeleccionada(null);
 
-    }, []);
+    }, [ocultarMenuFila]);
 
     //inicializa coleccion de columnas ordenadas por default
     const [ordenamiento,setOrdenamiento] =
@@ -101,33 +141,51 @@ function Grid({
         )
     );
 
+    // Reparto proporcional opcional; las demás grillas mantienen sus anchos.
+    const [anchoDisponible, setAnchoDisponible] = useState(0);
+    useEffect(() => {
+        if (!ajustarColumnasAlAncho || !refGrillaDatos.current) return;
+        const elemento = refGrillaDatos.current;
+        const medir = () => setAnchoDisponible(elemento.clientWidth);
+        medir();
+        const observador = new ResizeObserver(medir);
+        observador.observe(elemento);
+        return () => observador.disconnect();
+    }, [ajustarColumnasAlAncho]);
+    const layoutProporcional = useMemo(() => {
+        if (!ajustarColumnasAlAncho || !anchoDisponible) return layoutColumnas;
+        const visibles = columnasVisibles.filter(columna => columna.visible !== false);
+        const total = visibles.reduce((suma, columna) => suma + (columna.proporcion ?? 1), 0);
+        const disponible = Math.max(0, anchoDisponible - (mostrarCheck ? ANCHO_COLUMNA_CHECK : 0));
+        let acumulado = 0;
+        return visibles.map((columna, indice) => {
+            const ancho = indice === visibles.length - 1
+                ? disponible - acumulado
+                : Math.floor(disponible * (columna.proporcion ?? 1) / total);
+            acumulado += ancho;
+            return { campo: columna.campo, ancho };
+        });
+    }, [ajustarColumnasAlAncho, anchoDisponible, columnasVisibles, layoutColumnas, mostrarCheck]);
+
     const {
         setColumnasOrdenadas,
         columnasParaMostrar
     } = useGridColumnas({
         columnasVisibles,
-        layoutColumnas,
-        layoutVersion,
+        layoutColumnas: layoutProporcional,
+        layoutVersion: ajustarColumnasAlAncho ? `${layoutVersion}:${anchoDisponible}` : layoutVersion,
         onLayoutChange
     });
 
     //logica para adminsitar la seleccion de la fila y visualizacion del menu flotante
-    const seleccionarFila = useCallback(function seleccionarFila(fila,e)
+    function seleccionarFila(fila,elementoFila)
     {
-        if (filaEditandoKey) {
-            return;
-        }
-
-        if(filaSeleccionada === fila)
-        {
-            //si fila seleccionada la deselecciona
-            cerrarMenuFila();
-
+        if (!elementoFila) {
             return;
         }
 
         const rectFila =
-            e.currentTarget.getBoundingClientRect();
+            elementoFila.getBoundingClientRect();
 
         const rectGrilla =
             refGrillaDatos.current.getBoundingClientRect();
@@ -141,7 +199,7 @@ function Grid({
 
         setFilaSeleccionada(fila);
         setMostrarMenuFila(true);
-    }, [filaSeleccionada,filaEditandoKey,cerrarMenuFila]);
+    }
 
     useEffect(() => {
         onEdicionChange?.(filaEditandoKey == null ? null : {
@@ -196,32 +254,63 @@ function Grid({
         anchoMinimoColumna:ANCHO_MINIMO_COLUMNA
     });
 
-    const dataFiltrada = useMemo(() => {
+    const columnasParaKey = useMemo(() =>
+        columnasVisibles.filter(
+            columna => columna.key === true
+        ),
+        [columnasVisibles]
+    );
+
+    const armarKeyFila = useCallback(function armarKeyFila(fila) {
+        return columnasParaKey
+            .map(columna => fila?.[columna.campo])
+            .join("|");
+    }, [columnasParaKey]);
+
+    const { base:dataBase, alFinal:dataAlFinal } = useMemo(() =>
+        separarFilasAlFinal(dataGrid, filasAlFinal, armarKeyFila),
+        [dataGrid,filasAlFinal,armarKeyFila]
+    );
+
+    const dataBaseFiltrada = useMemo(() => {
 
         return filtrarDatosPorTexto(
-            dataGrid,
+            dataBase,
             columnasParaMostrar,
-            textoBusqueda
+            textoBusqueda,
+            contextoCalculos
         );
 
     }, [
-        dataGrid,
+        dataBase,
         columnasParaMostrar,
-        textoBusqueda
+        textoBusqueda,
+        contextoCalculos
     ]);
+
+    const dataFiltrada = useMemo(() => [
+        ...dataBaseFiltrada,
+        ...dataAlFinal
+    ], [dataBaseFiltrada,dataAlFinal]);
 
     const dataOrdenada = useMemo(() => {
 
-        return ordenarDatos(
-            dataFiltrada,
-            ordenamiento,
-            columnasVisibles
-        );
+        return [
+            ...ordenarDatos(
+                dataBaseFiltrada,
+                ordenamiento,
+                columnasVisibles,
+                contextoCalculos
+            ),
+            ...dataAlFinal
+        ];
 
     }, [
-        dataFiltrada,
+        dataBaseFiltrada,
+        dataAlFinal,
         ordenamiento,
-        columnasVisibles
+        columnasVisibles,
+        contextoCalculos
     ]);
         
     //visualizacion de columnas ordenadas
@@ -270,22 +359,6 @@ function Grid({
 
     /*FIN ORDENAMIENTO DE FILAS*/
 
-
-    const columnasParaKey = useMemo(() =>
-        columnasVisibles.filter(
-            columna => columna.key === true
-        ),
-        [columnasVisibles]
-    );
-
-    const armarKeyFila = useCallback(function armarKeyFila(fila) {
-        return (
-            columnasParaKey
-            .map(columna => fila[columna.campo])
-            .join("|")
-        );
-    }, [columnasParaKey]);
-
     const todasLasKeys = useMemo(() =>
         dataOrdenada.map(fila =>
             armarKeyFila(fila)
@@ -311,14 +384,16 @@ function Grid({
             filas:dataFiltrada,
             keysSeleccionadas,
             keysSeleccionadasSet,
-            armarKeyFila
+            armarKeyFila,
+            contextoCalculos
         }),
         [
             columnasParaMostrar,
             dataFiltrada,
             keysSeleccionadas,
             keysSeleccionadasSet,
-            armarKeyFila
+            armarKeyFila,
+            contextoCalculos
         ]
     );
 
@@ -330,6 +405,7 @@ useEffect(() =>
     setFilaEditandoKey(null);
     setFilaEditandoOriginal(null);
     setFilaEditandoDraft(null);
+    setCampoFocoEdicion(null);
 },
 [
     enfoqueVersion == null
@@ -366,7 +442,9 @@ useEffect(() => {
     const cantidadSeleccionados = keysSeleccionadas.length;
 
     const cantidadTotalDisponible =
-        totalRegistrosRemotos ?? cantidadTotalRegistros;
+        totalRegistrosRemotos == null
+            ? cantidadTotalRegistros
+            : totalRegistrosRemotos;
 
     const segmentosCantidad = [];
 
@@ -386,12 +464,19 @@ useEffect(() => {
         );
     }
 
-    segmentosCantidad.push(
-        cantidadRegistrosCargados +
-        " de " +
-        cantidadTotalDisponible +
-        " registros"
-    );
+    if (formatoCantidadRegistros === "cantidad") {
+        segmentosCantidad.push(
+            cantidadTotalRegistros +
+            (cantidadTotalRegistros === 1 ? " registro" : " registros")
+        );
+    } else {
+        segmentosCantidad.push(
+            cantidadRegistrosCargados +
+            " de " +
+            cantidadTotalDisponible +
+            " registros"
+        );
+    }
 
     const textoCantidadRegistros =
         segmentosCantidad.join(" / ");
@@ -409,7 +494,7 @@ useEffect(() => {
             : claseBase;
     }, [keysSeleccionadasSet,filaEditandoKey]);
 
-    function iniciarEdicionFila(fila,keyFila) {
+    function iniciarEdicionFila(fila,keyFila,campoFoco = null) {
 
         if (!editable) {
             return;
@@ -418,24 +503,34 @@ useEffect(() => {
         setFilaEditandoKey(keyFila);
         setFilaEditandoOriginal({...fila});
         setFilaEditandoDraft({...fila});
+        setCampoFocoEdicion(campoFoco);
         cerrarMenuFila();
 
     }
 
     function cambiarDraftFila(campo,valorNuevo) {
 
-        setFilaEditandoDraft(draftActual => ({
-            ...draftActual,
-            [campo]:valorNuevo
-        }));
+        setFilaEditandoDraft(draftActual =>
+            aplicarDependenciasColumnasCalculadas({
+                filaOriginal:filaEditandoOriginal,
+                filaDraft:{ ...draftActual, [campo]:valorNuevo },
+                columnas:columnasVisibles
+            })
+        );
 
     }
 
     function cambiarDraftCampos(cambios) {
-        setFilaEditandoDraft(actual => ({ ...actual, ...cambios }));
+        setFilaEditandoDraft(actual =>
+            aplicarDependenciasColumnasCalculadas({
+                filaOriginal:filaEditandoOriginal,
+                filaDraft:{ ...actual, ...cambios },
+                columnas:columnasVisibles
+            })
+        );
     }
 
-    function confirmarEdicionFila() {
+    const confirmarEdicionFila = useCallback(function confirmarEdicionFila() {
 
         if (filaEditandoKey == null || !filaEditandoOriginal || !filaEditandoDraft) {
             return false;
@@ -466,26 +561,53 @@ useEffect(() => {
         setFilaEditandoKey(null);
         setFilaEditandoOriginal(null);
         setFilaEditandoDraft(null);
+        setCampoFocoEdicion(null);
 
         return true;
 
-    }
+    }, [
+        filaEditandoKey,
+        filaEditandoOriginal,
+        filaEditandoDraft,
+        columnasVisibles,
+        onRowChange,
+        onCellChange,
+        setFilaEditandoKey,
+        setFilaEditandoOriginal,
+        setFilaEditandoDraft,
+        setCampoFocoEdicion
+    ]);
 
     function cancelarEdicionFila() {
 
         setFilaEditandoKey(null);
         setFilaEditandoOriginal(null);
         setFilaEditandoDraft(null);
+        setCampoFocoEdicion(null);
 
     }
 
-    function manejarClickSimpleFila(fila,keyFila) {
+    function manejarClickSimpleFila(fila,keyFila,elementoFila) {
 
-        if (filaEditandoKey && filaEditandoKey !== keyFila) {
+        if (filaEditandoKey === keyFila) {
+            return;
+        }
+
+        if (filaEditandoKey) {
             confirmarEdicionFila();
         }
 
-        cerrarMenuFila();
+        seleccionarFila(fila,elementoFila);
+
+    }
+
+    function manejarDobleClickFila(fila,keyFila,campo) {
+
+        if (!editable || filaEditandoKey === keyFila) {
+            return;
+        }
+
+        iniciarEdicionFila(fila,keyFila,campo);
 
     }
 
@@ -519,8 +641,8 @@ useEffect(() => {
         mostrarCheck,
         anchoColumnaCheck:ANCHO_COLUMNA_CHECK,
         anchoEspacioFinal:ANCHO_ESPACIO_FINAL,
-        anchoScrollVertical:ANCHO_SCROLL_VERTICAL,
-        onOcultarMenuFila:cerrarMenuFila
+        anchoScrollVertical:ajustarAlturaAContenido ? 0 : ANCHO_SCROLL_VERTICAL,
+        onOcultarMenuFila:ocultarMenuFila
     });
 
     const {
@@ -537,13 +659,14 @@ useEffect(() => {
         sincronizarDesdeScrollVertical,
         sincronizarDesdeScrollHorizontal,
         sincronizarDesdeGrillaDatos,
-        onOcultarMenuFila:cerrarMenuFila,
+        onOcultarMenuFila:ocultarMenuFila,
         onConfirmarEdicionActiva:confirmarEdicionFila
     });
 
     const {
         filasVirtuales,
         altoTotal,
+        altoFilaMedido,
         offsetY,
         altoInferior,
         actualizarScrollTop
@@ -552,6 +675,213 @@ useEffect(() => {
         refContenedor:refGrillaDatos,
         altoFilaEstimado:altoFila
     });
+
+    const asegurarFilaVisible = useCallback(function asegurarFilaVisible(keyFila) {
+        if (animacionUbicacionFila.current != null) {
+            window.cancelAnimationFrame(animacionUbicacionFila.current);
+        }
+
+        animacionUbicacionFila.current = window.requestAnimationFrame(() => {
+            animacionUbicacionFila.current = window.requestAnimationFrame(() => {
+                animacionUbicacionFila.current = null;
+                const contenedor = refGrillaDatos.current;
+                if (!contenedor) return;
+
+                const fila = [...contenedor.querySelectorAll("tbody tr[data-key]")]
+                    .find(elemento => elemento.dataset.key === keyFila);
+                if (!fila) return;
+
+                const rectContenedor = contenedor.getBoundingClientRect();
+                const rectFila = fila.getBoundingClientRect();
+                const limiteSuperior = rectContenedor.top + contenedor.clientTop;
+                const limiteInferior = limiteSuperior + contenedor.clientHeight;
+                const siguienteScroll = calcularScrollFilaVisible({
+                    scrollTop:contenedor.scrollTop,
+                    scrollMaximo:Math.max(0, contenedor.scrollHeight - contenedor.clientHeight),
+                    filaSuperior:rectFila.top,
+                    filaInferior:rectFila.bottom,
+                    limiteSuperior,
+                    limiteInferior
+                });
+
+                if (siguienteScroll === contenedor.scrollTop) return;
+                contenedor.scrollTop = siguienteScroll;
+                if (refScrollVertical.current) {
+                    refScrollVertical.current.scrollTop = siguienteScroll;
+                }
+                actualizarScrollTop(siguienteScroll);
+            });
+        });
+    }, [actualizarScrollTop]);
+
+    useEffect(() => () => {
+        if (animacionUbicacionFila.current != null) {
+            window.cancelAnimationFrame(animacionUbicacionFila.current);
+        }
+    }, []);
+
+    const obtenerEstadoNavegacion = useCallback(function obtenerEstadoNavegacion() {
+        const keySeleccionada = filaSeleccionada
+            ? armarKeyFila(filaSeleccionada)
+            : null;
+        const indice = keySeleccionada == null
+            ? -1
+            : dataOrdenada.findIndex(
+                fila => armarKeyFila(fila) === keySeleccionada
+            );
+        const fila = indice >= 0 ? dataOrdenada[indice] : null;
+
+        return {
+            fila,
+            indice,
+            cantidad:dataOrdenada.length,
+            puedeAnterior:indice > 0,
+            puedeSiguiente:indice >= 0 && indice < dataOrdenada.length - 1
+        };
+    }, [filaSeleccionada,armarKeyFila,dataOrdenada]);
+
+    const ubicarFilaNavegada = useCallback(function ubicarFilaNavegada(indice) {
+        if (indice < 0 || indice >= dataOrdenada.length) {
+            return obtenerEstadoNavegacion();
+        }
+
+        const fila = dataOrdenada[indice];
+        const contenedor = refGrillaDatos.current;
+        const scrollActual = contenedor?.scrollTop ?? 0;
+        const altoViewport = contenedor?.clientHeight ?? 0;
+        const scrollVertical = refScrollVertical.current;
+        const scrollMaximo = scrollVertical
+            ? Math.max(0, scrollVertical.scrollHeight - scrollVertical.clientHeight)
+            : Math.max(0, altoTotal - altoViewport);
+        const siguienteScroll = calcularScrollIndiceFila({
+            indice,
+            cantidadFilas:dataOrdenada.length,
+            altoFila:altoFilaMedido,
+            altoViewport,
+            scrollActual,
+            scrollMaximo
+        });
+
+        setMostrarMenuFila(false);
+        setFilaSeleccionada(fila);
+
+        if (contenedor) {
+            contenedor.scrollTop = siguienteScroll;
+        }
+        if (refScrollVertical.current) {
+            refScrollVertical.current.scrollTop = siguienteScroll;
+        }
+        actualizarScrollTop(siguienteScroll);
+        asegurarFilaVisible(armarKeyFila(fila));
+
+        return {
+            fila,
+            indice,
+            cantidad:dataOrdenada.length,
+            puedeAnterior:indice > 0,
+            puedeSiguiente:indice < dataOrdenada.length - 1
+        };
+    }, [
+        dataOrdenada,
+        altoFilaMedido,
+        altoTotal,
+        actualizarScrollTop,
+        obtenerEstadoNavegacion,
+        asegurarFilaVisible,
+        armarKeyFila
+    ]);
+
+    const navegarRegistro = useCallback(function navegarRegistro(destino) {
+        if (dataOrdenada.length === 0) {
+            return obtenerEstadoNavegacion();
+        }
+
+        const actual = obtenerEstadoNavegacion();
+        let indiceDestino = actual.indice;
+
+        if (destino === "primero") {
+            indiceDestino = 0;
+        } else if (destino === "ultimo") {
+            indiceDestino = dataOrdenada.length - 1;
+        } else if (destino === "anterior") {
+            indiceDestino = actual.indice < 0 ? 0 : Math.max(0, actual.indice - 1);
+        } else if (destino === "siguiente") {
+            indiceDestino = actual.indice < 0
+                ? 0
+                : Math.min(dataOrdenada.length - 1, actual.indice + 1);
+        } else {
+            return actual;
+        }
+
+        return ubicarFilaNavegada(indiceDestino);
+    }, [dataOrdenada,obtenerEstadoNavegacion,ubicarFilaNavegada]);
+
+    const ubicarFila = useCallback(function ubicarFila(filaSolicitada) {
+        if (!filaSolicitada) {
+            return obtenerEstadoNavegacion();
+        }
+
+        const keySolicitada = armarKeyFila(filaSolicitada);
+        const indice = dataOrdenada.findIndex(
+            fila => armarKeyFila(fila) === keySolicitada
+        );
+
+        return indice >= 0
+            ? ubicarFilaNavegada(indice)
+            : obtenerEstadoNavegacion();
+    }, [armarKeyFila,dataOrdenada,obtenerEstadoNavegacion,ubicarFilaNavegada]);
+
+    const editarFila = useCallback(function editarFila(filaSolicitada) {
+        if (!editable || !filaSolicitada) {
+            return false;
+        }
+
+        const keySolicitada = armarKeyFila(filaSolicitada);
+        const indice = dataOrdenada.findIndex(
+            fila => armarKeyFila(fila) === keySolicitada
+        );
+
+        if (indice < 0) {
+            return false;
+        }
+
+        const fila = dataOrdenada[indice];
+        ubicarFilaNavegada(indice);
+        setFilaEditandoKey(keySolicitada);
+        setFilaEditandoOriginal({ ...fila });
+        setFilaEditandoDraft({ ...fila });
+        setCampoFocoEdicion(null);
+        cerrarMenuFila();
+        return true;
+    }, [
+        editable,
+        armarKeyFila,
+        dataOrdenada,
+        ubicarFilaNavegada,
+        cerrarMenuFila,
+        setFilaEditandoKey,
+        setFilaEditandoOriginal,
+        setFilaEditandoDraft,
+        setCampoFocoEdicion
+    ]);
+
+    useImperativeHandle(controlNavegacionRef, () => ({
+        obtenerEstado:obtenerEstadoNavegacion,
+        navegar:navegarRegistro,
+        ubicarFila,
+        editarFila,
+        confirmarEdicion:confirmarEdicionFila
+    }), [
+        obtenerEstadoNavegacion,
+        navegarRegistro,
+        ubicarFila,
+        editarFila,
+        confirmarEdicionFila
+    ]);
+
+    useEffect(() => {
+        onNavegacionChange?.(obtenerEstadoNavegacion());
+    }, [obtenerEstadoNavegacion,onNavegacionChange]);
 
     useEffect(() => {
 
@@ -595,6 +925,13 @@ useEffect(() => {
         (mostrarCheck ? 1 : 0) +
         1;
 
+    const alturaContenido = ajustarAlturaAContenido
+        ? Math.max(
+            Math.max(0, Number(alturaMinima) || 0),
+            (dataOrdenada.length + 2) * altoFila + 8
+        )
+        : null;
+
     useEffect(() => {
 
         document.addEventListener(
@@ -615,17 +952,18 @@ useEffect(() => {
     return (
 
     <div
-        className="grilla"
+        className={`grilla ${ajustarAlturaAContenido ? "grillaAlturaContenido" : ""}`}
         ref={refGrilla}
         tabIndex={0}
         onKeyDown={manejarTeclaScroll}
         style={{
             "--grid-font-size": tamanoFuente + "px",
             "--grid-total-font-size": (tamanoFuente + 1) + "px",
-            "--grid-row-height": altoFila + "px"
+            "--grid-row-height": altoFila + "px",
+            height: alturaContenido == null ? undefined : alturaContenido + "px"
         }}
     >
-        {cargando && (
+        {mostrarIndicadorCarga && (
             <div className="grillaLoadingOverlay">
                 <div className="loader"></div>
                 <div className="loaderTexto">
@@ -761,9 +1099,9 @@ useEffect(() => {
                                 mostrarCheck={mostrarCheck}
                                 anchoColumnaCheck={ANCHO_COLUMNA_CHECK}
                                 columnas={columnasParaMostrar}
+                                contextoCalculos={contextoCalculos}
                                 checked={checked}
                                 cambiarCheckFila={cambiarCheckFila}
-                                seleccionarFila={seleccionarFila}
                                 refPrimeraCeldaDatos={refPrimeraCeldaDatos}
                                 estiloColumna={estiloColumna}
                                 estiloEspacioFinal={estiloEspacioFinal}
@@ -776,11 +1114,17 @@ useEffect(() => {
                                         ? filaEditandoDraft
                                         : null
                                 }
+                                campoFocoEdicion={
+                                    filaEditandoKey === keyFila
+                                        ? campoFocoEdicion
+                                        : null
+                                }
                                 onDraftChange={cambiarDraftFila}
                                 onDraftPatch={cambiarDraftCampos}
                                 onConfirmarEdicionFila={confirmarEdicionFila}
                                 onCancelarEdicionFila={cancelarEdicionFila}
                                 onClickSimpleFila={manejarClickSimpleFila}
+                                onDobleClickFila={manejarDobleClickFila}
                             />
                         );
                     })
@@ -820,34 +1164,47 @@ useEffect(() => {
                 scrollLeft={refGrillaDatos.current?.scrollLeft ?? 0}
                 anchoContenido={anchoContenidoScrollHorizontal}
                 anchoContenedor={refGrillaDatos.current?.clientWidth ?? 0}
+                acciones={accionesMenuFila}
                 onEditarFila={() => {
                     if (!filaSeleccionada) {
                         return;
                     }
 
+                    if (onEditarRegistro) {
+                        setMostrarMenuFila(false);
+                        onEditarRegistro(filaSeleccionada);
+                        return;
+                    }
                     iniciarEdicionFila(
                         filaSeleccionada,
                         armarKeyFila(filaSeleccionada)
                     );
                 }}
+                onVerFila={() => {
+                    if (!filaSeleccionada || !onVerRegistro) return;
+                    setMostrarMenuFila(false);
+                    onVerRegistro(filaSeleccionada);
+                }}
                 onEliminarFila={eliminarFilaSeleccionada}
             />
 
 
-            <div
-                className="grillaScrollVertical"
-                ref={refScrollVertical}
-                onScroll={manejarScrollVertical}
-            >
-
+            {!ajustarAlturaAContenido && (
                 <div
-                    className="grillaScrollVerticalContenido"
-                    style={{
-                        height:altoTotal + "px"
-                    }}
-                ></div>
+                    className="grillaScrollVertical"
+                    ref={refScrollVertical}
+                    onScroll={manejarScrollVertical}
+                >
 
-            </div>
+                    <div
+                        className="grillaScrollVerticalContenido"
+                        style={{
+                            height:altoTotal + "px"
+                        }}
+                    ></div>
+
+                </div>
+            )}
 
         </div>
 

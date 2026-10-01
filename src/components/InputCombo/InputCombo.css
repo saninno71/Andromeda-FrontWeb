@@ -7,7 +7,7 @@
     padding-left:12px;
     padding-right:12px;
     border:1px solid #00AEEF;
-    border-radius:8px;
+    border-radius:5px;
     background:white;
     cursor:pointer;
 }
@@ -78,7 +78,7 @@
     width:100%;
     background:white;
     border:1px solid #00AEEF;
-    border-radius:8px;
+    border-radius:5px;
     overflow:hidden;
     z-index:1000;
     box-shadow:0 4px 8px rgba(0,0,0,0.10);
@@ -120,4 +120,22 @@
 .inputComboTituloActivo {
     font-size:9px;
     top:-5px;
+}
+
+.inputComboDeshabilitado {
+    border-color:#CCCCCC;
+    background:#F5F5F5;
+    cursor:default;
+}
+
+.inputComboDeshabilitado .inputComboTitulo,
+.inputComboDeshabilitado .inputComboValor {
+    color:#888888;
+}
+
+.inputComboDeshabilitado .inputComboIcono {
+    color:#A0A0A0;
+    filter:grayscale(1);
+    opacity:.45;
+    pointer-events:none;
 }

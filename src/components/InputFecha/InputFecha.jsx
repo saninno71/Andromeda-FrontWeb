@@ -39,7 +39,8 @@ const InputFecha = forwardRef(function InputFecha({
     tabIndex,
     variante = "formulario",
     onCancelar,
-    portalId
+    portalId,
+    disabled = false
 },ref)
 
 {
@@ -190,7 +191,7 @@ const InputFecha = forwardRef(function InputFecha({
 
     return (
 
-        <div className={`inputFecha ${variante === "celda" ? "inputFechaCelda" : ""}`} ref={contenedorRef}
+        <div className={`inputFecha ${variante === "celda" ? "inputFechaCelda" : ""} ${disabled ? "inputFechaDeshabilitada" : ""}`} ref={contenedorRef}
             onClick={variante === "celda" ? e => e.stopPropagation() : undefined}
             onKeyDown={variante === "celda" ? e => e.stopPropagation() : undefined}>
 
@@ -220,16 +221,15 @@ const InputFecha = forwardRef(function InputFecha({
                         dropdownMode="select"
                         popperPlacement="bottom-start"
                         className="inputFechaInput"
-                        tabIndex={tabIndex}
+                        tabIndex={disabled ? -1 : tabIndex}
+                        disabled={disabled}
                     />
 
                 </div>
 
                 <div
                     className="inputFechaIcono"
-                    onClick={() =>
-                        datePickerRef.current?.setOpen(true)
-                    }
+                    onClick={disabled ? undefined : () => datePickerRef.current?.setOpen(true)}
                 >
                     {icono}
                 </div>

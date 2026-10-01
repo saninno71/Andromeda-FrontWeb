@@ -9,6 +9,7 @@ function InputTexto({
     onChange,
     onIconClick,
     tabIndex,
+    disabled = false,
     className = ""
 }) {
 
@@ -18,7 +19,7 @@ function InputTexto({
         value !== "";
 
     return (
-        <div className={`inputTexto ${className}`}>
+        <div className={`inputTexto ${disabled ? "inputTextoDeshabilitado" : ""} ${className}`}>
 
             <div className="inputTextoContenido">
 
@@ -34,7 +35,8 @@ function InputTexto({
                         placeholder={placeholder}
                         type={type}
                         onChange={onChange}
-                        tabIndex={tabIndex}
+                        tabIndex={disabled ? -1 : tabIndex}
+                        disabled={disabled}
                     />
 
                 </div>
@@ -45,6 +47,7 @@ function InputTexto({
                         className="inputTextoIcono"
                         onClick={onIconClick}
                         tabIndex={-1}
+                        disabled={disabled}
                     >
                         {icono}
                     </button>

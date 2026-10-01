@@ -10,7 +10,7 @@ export function crearCambiosEntidad(entidad, config) {
 }
 export function obtenerCambiosFila(original, draft, columnas) {
     const responsables = new Map();
-    columnas.filter(c => c.editable).forEach(c => {
+    columnas.filter(c => c.editable && c.tipo !== "calculada").forEach(c => {
         [c.campo, ...Object.values(c.editorConfig?.campos ?? {})].forEach(campo => {
             if (!responsables.has(campo)) responsables.set(campo, c);
         });

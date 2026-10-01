@@ -6,7 +6,7 @@
     padding-left:14px;
     padding-right:14px;
     border:1px solid #00AEEF;
-    border-radius:4px;
+    border-radius:5px;
     background:white;
     box-sizing:border-box;
 }
@@ -73,4 +73,27 @@
     padding:0;
     color:#00AEEF;
     cursor:pointer;
+}
+
+.inputTextoDeshabilitado {
+    border-color:#CCCCCC;
+    background:#F5F5F5;
+}
+
+.inputTextoDeshabilitado .inputTextoTitulo,
+.inputTextoDeshabilitado .inputTextoInput {
+    color:#888888;
+}
+
+.inputTextoDeshabilitado .inputTextoInput:disabled,
+.inputTextoDeshabilitado .inputTextoIcono:disabled {
+    opacity:1;
+    cursor:default;
+}
+
+.inputTextoDeshabilitado .inputTextoIcono {
+    color:#A0A0A0;
+    filter:grayscale(1);
+    opacity:.45;
+    pointer-events:none;
 }

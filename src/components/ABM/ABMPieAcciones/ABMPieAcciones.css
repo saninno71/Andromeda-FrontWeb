@@ -1,0 +1,17 @@
+.abmPieAcciones {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-shrink:0;
+    gap:12px;
+    padding:16px 24px;
+    border-top:1px solid #ddd;
+}
+
+.abmPieAccionesDerecha { display:flex; gap:12px; }
+.abmPieAcciones .botonToolbar { min-width:100px; height:36px; justify-content:center; font-size:12px; }
+
+@media(max-width:520px) {
+    .abmPieAcciones { padding:12px; gap:6px; }
+    .abmPieAcciones .botonToolbar { min-width:0; padding:8px; }
+}

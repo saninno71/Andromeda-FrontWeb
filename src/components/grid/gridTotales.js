@@ -1,9 +1,12 @@
+import { obtenerValorColumna } from "./gridValores.js";
+
 export function calcularTotalesGrid({
     columnas,
     filas,
     keysSeleccionadas,
     keysSeleccionadasSet,
-    armarKeyFila
+    armarKeyFila,
+    contextoCalculos
 }) {
 
     const filasASumar =
@@ -28,7 +31,7 @@ export function calcularTotalesGrid({
                         return (
                             acumulador +
                             Number(
-                                fila[columna.campo] ||
+                                obtenerValorColumna(fila, columna, contextoCalculos) ||
                                 0
                             )
                         );

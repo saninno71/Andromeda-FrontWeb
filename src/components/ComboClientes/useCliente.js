@@ -6,26 +6,32 @@ import {
     obtenerTextoCliente,
     puedeBuscarCliente
 } from "./cliente.funcional";
+import {
+    crearBorradorDesdeEscritura,
+    crearBorradorDesdeValor,
+    esBusquedaIniciadaPorUsuario
+} from "../EntidadBusqueda/busquedaEntidad.funcional.js";
 
 export default function useCliente({ valor, onChange }) {
-    const [borrador, setBorrador] = useState(() => ({
-        valor,
-        texto: formatearCliente(valor)
-    }));
+    const [borrador, setBorrador] = useState(() =>
+        crearBorradorDesdeValor(valor, formatearCliente)
+    );
     const texto = obtenerTextoCliente(valor, borrador);
     const [clientes, setClientes] = useState([]);
 
     // Registrar el cambio externo evita reutilizar un borrador antiguo
     // si posteriormente se vuelve a seleccionar o limpiar la misma cliente.
     if (!Object.is(valor, borrador.valor)) {
-        setBorrador({ valor, texto: formatearCliente(valor) });
+        setBorrador(crearBorradorDesdeValor(valor, formatearCliente));
     }
 
     useEffect(() => {
         let cancelado = false;
         const controller = new AbortController();
-        setClientes([]);
-        if (!puedeBuscarCliente(texto, valor)) return;
+        if (
+            !esBusquedaIniciadaPorUsuario(borrador) ||
+            !puedeBuscarCliente(texto, valor)
+        ) return;
 
         const timeout = setTimeout(async () => {
             const datos = await buscarClientes({
@@ -39,19 +45,24 @@ export default function useCliente({ valor, onChange }) {
             controller.abort();
             clearTimeout(timeout);
         };
-    }, [texto, valor]);
+    }, [texto, valor, borrador]);
 
     function cambiarTexto(nuevoTexto) {
-        setBorrador({ valor: null, texto: nuevoTexto });
+        setBorrador(crearBorradorDesdeEscritura(nuevoTexto));
         setClientes([]);
         onChange(null);
     }
 
     function seleccionarCliente(cliente) {
-        setBorrador({ valor: cliente, texto: formatearCliente(cliente) });
+        setBorrador(crearBorradorDesdeValor(cliente, formatearCliente));
         setClientes([]);
         onChange(cliente);
     }
 
-    return { texto, clientes, cambiarTexto, seleccionarCliente };
+    return {
+        texto,
+        clientes:esBusquedaIniciadaPorUsuario(borrador) ? clientes : [],
+        cambiarTexto,
+        seleccionarCliente
+    };
 }

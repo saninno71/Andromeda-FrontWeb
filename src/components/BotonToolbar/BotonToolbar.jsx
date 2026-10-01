@@ -8,6 +8,8 @@ const BotonToolbar = forwardRef(function BotonToolbar({
     onClick,
     onKeyDown,
     variante,
+    disabled = false,
+    title,
     tabIndex,
     className = ""
 },ref)
@@ -21,6 +23,8 @@ const BotonToolbar = forwardRef(function BotonToolbar({
             className={`botonToolbar ${variante || ""} ${className}`}
             onClick={onClick}
             onKeyDown={onKeyDown}
+            disabled={disabled}
+            title={title}
             tabIndex={tabIndex}
             ref={ref}
         >

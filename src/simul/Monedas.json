@@ -1,0 +1,20 @@
+[
+  {
+    "ID": 6,
+    "Codigo": "EUR",
+    "Nombre": "Euro",
+    "CodigoFiscal": "060"
+  },
+  {
+    "ID": 7,
+    "Codigo": "ARS",
+    "Nombre": "Pesos Argentinos",
+    "CodigoFiscal": "PES"
+  },
+  {
+    "ID": 8,
+    "Codigo": "USD",
+    "Nombre": "Dólar Norteamericano",
+    "CodigoFiscal": "DOL"
+  }
+]

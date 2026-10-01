@@ -1,4 +1,5 @@
-import {formatearValor} from "../updFormatos";
+import {formatearValor} from "../updFormatos.js";
+import { obtenerValorColumna } from "./gridValores.js";
 
 export function normalizarTextoBusqueda(valor) {
 
@@ -10,7 +11,7 @@ export function normalizarTextoBusqueda(valor) {
 
 }
 
-export function filtrarDatosPorTexto(data,columnas,textoBusqueda) {
+export function filtrarDatosPorTexto(data,columnas,textoBusqueda,contextoCalculos) {
 
     const textoNormalizado =
         normalizarTextoBusqueda(textoBusqueda);
@@ -25,7 +26,7 @@ export function filtrarDatosPorTexto(data,columnas,textoBusqueda) {
             const valorFormateado =
                 normalizarTextoBusqueda(
                     formatearValor(
-                        fila[columna.campo],
+                        obtenerValorColumna(fila, columna, contextoCalculos),
                         columna.formato,
                         columna.mascara
                     )

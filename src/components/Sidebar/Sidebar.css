@@ -232,3 +232,30 @@
   width: 0;
   height: 0;
 }
+
+.sidebar-status-item {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.estadoSistemaMenuIcono {
+  width: 14px;
+  height: 14px;
+  align-items: center;
+}
+
+.estadoSistemaMenuIndicador {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.18);
+}
+
+.estadoSistemaMenuIndicador.estado-verde { background: #45d379; }
+.estadoSistemaMenuIndicador.estado-amarillo { background: #f1c84b; }
+.estadoSistemaMenuIndicador.estado-rojo { background: #ff5b5b; }
+.estadoSistemaMenuIndicador.estado-gris { background: #a9a9b0; }

@@ -1,0 +1,28 @@
+.abmNavegacionRegistros {
+    display:flex;
+    gap:5px;
+    flex-shrink:0;
+}
+
+.abmNavegacionRegistros .botonToolbar {
+    min-width:30px;
+    height:32px;
+    padding:4px 8px;
+}
+
+.abmNavegacionRegistros img {
+    width:20px;
+    height:20px;
+    object-fit:contain;
+}
+
+.abmNavegacionRegistrosAtenuada .botonToolbar {
+    border-color:#aaa;
+    background:#f5f5f5;
+    color:#888;
+    opacity:.55;
+}
+
+.abmNavegacionRegistrosAtenuada img {
+    filter:grayscale(1);
+}

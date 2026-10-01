@@ -1,8 +1,12 @@
-import { useState,useRef  } from "react";
+import { useRef } from "react";
 import menuData  from "../../simul/menu.json";
 import "./Sidebar.css";
 
-function Sidebar({ sidebarOpen,setSidebarOpen, onSelectPage }) {
+function Sidebar({ sidebarOpen,setSidebarOpen, onSelectPage, onAbrirEstadoSistema, estadoSistema = "gris" }) {
+
+const estadoSistemaNormalizado = ["verde", "amarillo", "rojo"].includes(estadoSistema)
+  ? estadoSistema
+  : "gris";
 
 
 const scrollRef = useRef(null);
@@ -177,6 +181,23 @@ return (
 
 
         <div className="sidebar-bottom">
+          <button
+            type="button"
+            className="menu-item sidebar-status-item"
+            aria-label={`Estado del sistema: ${estadoSistemaNormalizado}`}
+            title={`Estado del sistema: ${estadoSistemaNormalizado}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAbrirEstadoSistema?.();
+            }}
+          >
+            <span className="menu-main">
+              <span className="icon estadoSistemaMenuIcono" aria-hidden="true">
+                <i className={`estadoSistemaMenuIndicador estado-${estadoSistemaNormalizado}`} />
+              </span>
+              <span className="label">Estado del sistema</span>
+            </span>
+          </button>
           <div className="menu-item">
             <div className="menu-main">
               <span className="icon">

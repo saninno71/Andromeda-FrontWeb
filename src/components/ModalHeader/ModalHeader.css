@@ -1,0 +1,68 @@
+.modalHeader {
+    display:flex;
+    align-items:center;
+    height:54px;
+    flex-shrink:0;
+    padding:0 10px 0 12px;
+    box-sizing:border-box;
+    background:#fff;
+}
+
+.modalHeaderCerrar {
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:22px;
+    height:22px;
+    padding:0;
+    flex-shrink:0;
+    border:1px solid #662D91;
+    border-radius:50%;
+    background:#F4ECFA;
+    color:#662D91;
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    font-weight:600;
+    line-height:1;
+    cursor:pointer;
+}
+
+.modalHeaderCerrarIcono,
+.modalHeaderCerrarIcono::before,
+.modalHeaderCerrarIcono::after {
+    position:absolute;
+    left:50%;
+    top:50%;
+}
+
+.modalHeaderCerrarIcono::before,
+.modalHeaderCerrarIcono::after {
+    content:"";
+    width:11px;
+    height:1.5px;
+    border-radius:1px;
+    background:currentColor;
+}
+
+.modalHeaderCerrarIcono::before {
+    transform:translate(-50%,-50%) rotate(45deg);
+}
+
+.modalHeaderCerrarIcono::after {
+    transform:translate(-50%,-50%) rotate(-45deg);
+}
+
+.modalHeaderTitulo {
+    margin-left:18px;
+    color:#662D91;
+    font-family:'Inter',sans-serif;
+    font-size:16px;
+    font-weight:700;
+}
+
+.modalHeaderAdicional {
+    display:flex;
+    align-items:center;
+    margin-left:auto;
+}

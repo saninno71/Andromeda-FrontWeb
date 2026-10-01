@@ -77,7 +77,23 @@ export function useGridColumnas({
                 );
 
             if (mismosCampos) {
-                return columnasActuales;
+                const nuevasPorCampo = new Map(
+                    accion.columnasVisibles.map(columna => [
+                        columna.campo,
+                        columna
+                    ])
+                );
+                let cambioVisibilidad = false;
+                const columnasSincronizadas = columnasActuales.map(columna => {
+                    const nueva = nuevasPorCampo.get(columna.campo);
+                    if (!nueva || nueva.visible === columna.visible) return columna;
+                    cambioVisibilidad = true;
+                    return { ...columna, visible:nueva.visible };
+                });
+
+                return cambioVisibilidad
+                    ? columnasSincronizadas
+                    : columnasActuales;
             }
 
             return accion.columnasVisibles;

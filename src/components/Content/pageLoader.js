@@ -2,7 +2,7 @@ import { lazy } from "react";
 
 const pages = import.meta.glob("../../modulos/**/*.jsx");
 const pageAliases = {
-    asientos:"../../modulos/asientos/ctbAsientosBQD.jsx"
+    asientos:"../../modulos/asientos/AsientosBQD/ctbAsientosBQD.jsx"
 };
 
 export function getLazyPage(route) {

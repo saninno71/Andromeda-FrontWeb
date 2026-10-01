@@ -1,3 +1,5 @@
+import { obtenerValorColumna } from "./gridValores.js";
+
 export function toggleOrdenamiento(
     ordenamiento,
     campo
@@ -43,7 +45,8 @@ export function toggleOrdenamiento(
 export function ordenarDatos(
     data,
     ordenamiento,
-    columnas
+    columnas,
+    contextoCalculos
 )
 {
     return [...data].sort((a,b) => {
@@ -56,8 +59,12 @@ export function ordenarDatos(
 
             const formato = columna?.formato;
 
-            let valorA = a[orden.campo];
-            let valorB = b[orden.campo];
+            let valorA = columna
+                ? obtenerValorColumna(a, columna, contextoCalculos)
+                : a[orden.campo];
+            let valorB = columna
+                ? obtenerValorColumna(b, columna, contextoCalculos)
+                : b[orden.campo];
 
             // TEXTO
             if(formato === "texto")

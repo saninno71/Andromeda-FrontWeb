@@ -6,26 +6,32 @@ import {
     obtenerTextoProveedor,
     puedeBuscarProveedor
 } from "./proveedor.funcional";
+import {
+    crearBorradorDesdeEscritura,
+    crearBorradorDesdeValor,
+    esBusquedaIniciadaPorUsuario
+} from "../EntidadBusqueda/busquedaEntidad.funcional.js";
 
 export default function useProveedor({ valor, empresaID, onChange }) {
-    const [borrador, setBorrador] = useState(() => ({
-        valor,
-        texto: formatearProveedor(valor)
-    }));
+    const [borrador, setBorrador] = useState(() =>
+        crearBorradorDesdeValor(valor, formatearProveedor)
+    );
     const texto = obtenerTextoProveedor(valor, borrador);
     const [proveedores, setProveedores] = useState([]);
 
     // Registrar el cambio externo evita reutilizar un borrador antiguo
     // si posteriormente se vuelve a seleccionar o limpiar la misma proveedor.
     if (!Object.is(valor, borrador.valor)) {
-        setBorrador({ valor, texto: formatearProveedor(valor) });
+        setBorrador(crearBorradorDesdeValor(valor, formatearProveedor));
     }
 
     useEffect(() => {
         let cancelado = false;
         const controller = new AbortController();
-        setProveedores([]);
-        if (!puedeBuscarProveedor(texto, valor)) return;
+        if (
+            !esBusquedaIniciadaPorUsuario(borrador) ||
+            !puedeBuscarProveedor(texto, valor)
+        ) return;
 
         const timeout = setTimeout(async () => {
             const datos = await buscarProveedores({
@@ -39,19 +45,24 @@ export default function useProveedor({ valor, empresaID, onChange }) {
             controller.abort();
             clearTimeout(timeout);
         };
-    }, [texto, empresaID, valor]);
+    }, [texto, empresaID, valor, borrador]);
 
     function cambiarTexto(nuevoTexto) {
-        setBorrador({ valor: null, texto: nuevoTexto });
+        setBorrador(crearBorradorDesdeEscritura(nuevoTexto));
         setProveedores([]);
         onChange(null);
     }
 
     function seleccionarProveedor(proveedor) {
-        setBorrador({ valor: proveedor, texto: formatearProveedor(proveedor) });
+        setBorrador(crearBorradorDesdeValor(proveedor, formatearProveedor));
         setProveedores([]);
         onChange(proveedor);
     }
 
-    return { texto, proveedores, cambiarTexto, seleccionarProveedor };
+    return {
+        texto,
+        proveedores:esBusquedaIniciadaPorUsuario(borrador) ? proveedores : [],
+        cambiarTexto,
+        seleccionarProveedor
+    };
 }

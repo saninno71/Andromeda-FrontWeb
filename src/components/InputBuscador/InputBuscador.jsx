@@ -6,14 +6,15 @@ function InputBuscador({
     placeholder,
     icono,
     onChange,
-    tabIndex
+    tabIndex,
+    disabled = false
 })
 
 {
 
     return (
 
-        <div className="inputBuscador">
+        <div className={`inputBuscador ${disabled ? "inputBuscadorDeshabilitado" : ""}`}>
 
             <div className="inputBuscadorContenido">
 
@@ -28,7 +29,8 @@ function InputBuscador({
                         value={value || ""}
                         placeholder={placeholder}
                         onChange={onChange}
-                        tabIndex={tabIndex}
+                        tabIndex={disabled ? -1 : tabIndex}
+                        disabled={disabled}
                     />
 
                 </div>

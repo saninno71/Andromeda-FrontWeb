@@ -1,0 +1,1238 @@
+diff --git a/src/fyd.backend.API/Controllers/Contabilidad/AsientoController.cs b/src/fyd.backend.API/Controllers/Contabilidad/AsientoController.cs
+index 78c5620..2927a2b 100644
+--- a/src/fyd.backend.API/Controllers/Contabilidad/AsientoController.cs
++++ b/src/fyd.backend.API/Controllers/Contabilidad/AsientoController.cs
+@@ -96,9 +96,9 @@ namespace fyd.backend.API.Controllers.Contabilidad
+         }
+ 
+         /// <summary>
+-        /// Elimina un asiento contable por su ID.
++        /// Elimina un asiento contable completo por el ID de su comprobante.
+         /// </summary>
+-        /// <param name="id">ID del asiento a eliminar.</param>
++        /// <param name="id">ID de gnrComprobantes del asiento a eliminar.</param>
+         /// <returns>No Content si es exitoso.</returns>
+         [HttpDelete("{id}")]
+         [ProducesResponseType(StatusCodes.Status204NoContent)]
+diff --git a/src/fyd.backend.Aplicacion/Contabilidad/DTOs/AsientoDtos.cs b/src/fyd.backend.Aplicacion/Contabilidad/DTOs/AsientoDtos.cs
+index d0c5a93..d2363f2 100644
+--- a/src/fyd.backend.Aplicacion/Contabilidad/DTOs/AsientoDtos.cs
++++ b/src/fyd.backend.Aplicacion/Contabilidad/DTOs/AsientoDtos.cs
+@@ -25,6 +25,7 @@ namespace fyd.backend.Aplicacion.Contabilidad.DTOs
+         double CotizacionReferencia,
+         string Detalle,
+         string? Observaciones,
++        int? PuntoVenta,
+         List<CrearAsientoLineaDto> Lineas
+     );
+ 
+@@ -104,6 +105,7 @@ namespace fyd.backend.Aplicacion.Contabilidad.DTOs
+         int EmpresaId,
+         string EmpresaNombre,
+         int MonedaId,
++        string MonedaCodigo,
+         string MonedaNombre,
+         decimal CotizacionLocal,
+         decimal CotizacionReferencia,
+diff --git a/src/fyd.backend.Aplicacion/Contabilidad/Mapeos/AsientoDtoMapeo.cs b/src/fyd.backend.Aplicacion/Contabilidad/Mapeos/AsientoDtoMapeo.cs
+index e13ef74..76f97d8 100644
+--- a/src/fyd.backend.Aplicacion/Contabilidad/Mapeos/AsientoDtoMapeo.cs
++++ b/src/fyd.backend.Aplicacion/Contabilidad/Mapeos/AsientoDtoMapeo.cs
+@@ -19,6 +19,7 @@ namespace fyd.backend.Aplicacion.Contabilidad.Mapeos
+                 EmpresaId: comprobante.EmpresaId ?? 0,
+                 EmpresaNombre: comprobante.EmpresaNombre ?? string.Empty,
+                 MonedaId: comprobante.MonedaId ?? 0,
++                MonedaCodigo: comprobante.MonedaCodigo ?? string.Empty,
+                 MonedaNombre: comprobante.MonedaNombre ?? string.Empty,
+                 CotizacionLocal: (decimal)(comprobante.CotizacionLocal ?? 0d),
+                 CotizacionReferencia: (decimal)(comprobante.CotizacionReferencia ?? 0d),
+diff --git a/src/fyd.backend.Aplicacion/Contabilidad/Servicios/AsientoServicio.cs b/src/fyd.backend.Aplicacion/Contabilidad/Servicios/AsientoServicio.cs
+index 4dace87..1e7ba38 100644
+--- a/src/fyd.backend.Aplicacion/Contabilidad/Servicios/AsientoServicio.cs
++++ b/src/fyd.backend.Aplicacion/Contabilidad/Servicios/AsientoServicio.cs
+@@ -31,6 +31,17 @@ namespace fyd.backend.Aplicacion.Contabilidad.Servicios
+                 return Resultado<int>.Falla(AsientoError.CotizacionInvalida);
+             }
+ 
++            if (dto.PuntoVenta.HasValue)
++            {
++                var puntoVentaNumeracion = await _repositorio.ObtenerPuntoVentaNumeracion(dto.NumeraTipoId);
++                if (dto.PuntoVenta.Value <= 0 || puntoVentaNumeracion != dto.PuntoVenta.Value)
++                {
++                    return Resultado<int>.Falla(AsientoError.PuntoVentaInvalido(
++                        dto.PuntoVenta.Value,
++                        dto.NumeraTipoId));
++                }
++            }
++
+             // B11: Validar que el período no esté cerrado
+             if (await _repositorio.PeriodoEstaCerrado(dto.Fecha))
+             {
+@@ -42,14 +53,13 @@ namespace fyd.backend.Aplicacion.Contabilidad.Servicios
+                 return Resultado<int>.Falla(AsientoError.PeriodoRenumerado);
+             }
+ 
+-            // Crear el comprobante cabecera
+-            // TODO: Cuando exista la lógica de numeración (NumeraTipos/Numeraciones),
+-            //       obtener automáticamente Letra, PuntoVenta, y auto-numerar si Numero es null.
++            // Crear el comprobante cabecera. Si Numero es null, el repositorio reserva
++            // el siguiente valor de la numeración automática dentro de la transacción de alta.
+             var resultadoComprobante = Comprobante.Crear(
+                 fecha: dto.Fecha,
+                 fechaEmision: dto.FechaEmision,
+                 numeraTipoId: dto.NumeraTipoId,
+-                numero: dto.Numero ?? 0,
++                numero: dto.Numero,
+                 empresaId: dto.EmpresaId,
+                 monedaId: dto.MonedaId,
+                 cotizacionLocal: dto.CotizacionLocal,
+@@ -83,8 +93,8 @@ namespace fyd.backend.Aplicacion.Contabilidad.Servicios
+                 }
+ 
+                 // Calcular importes en moneda local y referencia
+-                decimal impLocal = linea.Importe * (decimal)dto.CotizacionLocal;
+-                decimal impReferencia = linea.Importe * (decimal)dto.CotizacionReferencia;
++                decimal impLocal = linea.Importe / (decimal)dto.CotizacionLocal;
++                decimal impReferencia = linea.Importe / (decimal)dto.CotizacionReferencia;
+ 
+                 var resultadoAsiento = Asiento.Crear(
+                     comprobanteId: 0, // Se asigna después del save del comprobante
+@@ -135,22 +145,8 @@ namespace fyd.backend.Aplicacion.Contabilidad.Servicios
+                 return Resultado<int>.Falla(resultadoActualizarComprobante.Error!);
+             }
+ 
+-            // Asignar las líneas al comprobante y configurar navegación inversa
+-            var propComprobante = typeof(Asiento).GetProperty("Comprobante");
+-            foreach (var linea in lineas)
+-            {
+-                comprobante.Asientos.Add(linea);
+-                if (propComprobante != null && propComprobante.CanWrite)
+-                {
+-                    propComprobante.SetValue(linea, comprobante, null);
+-                }
+-                await _repositorio.Agregar(linea);
+-            }
+-
+-            // Persistir
+-            await _unidadDeTrabajo.GuardarCambios();
+-
+-            return Resultado<int>.Exito(comprobante.Id);
++            var comprobanteId = await _repositorio.CrearPorComprobante(comprobante, lineas);
++            return Resultado<int>.Exito(comprobanteId);
+         }
+ 
+         // =====================================================
+@@ -186,19 +182,29 @@ namespace fyd.backend.Aplicacion.Contabilidad.Servicios
+                 return Resultado.Falla(AsientoError.NoEncontrado(dto.Id));
+             }
+ 
+-            if (dto.Lineas == null || dto.Lineas.Count == 0 ||
+-                dto.Lineas.Any(linea => !linea.Id.HasValue || linea.Id.Value <= 0) ||
+-                dto.Lineas.Select(linea => linea.Id!.Value).Distinct().Count() != dto.Lineas.Count)
++            if (dto.Lineas == null || dto.Lineas.Count == 0)
+             {
+                 return Resultado.Falla(AsientoError.RenglonesNoCoinciden);
+             }
+ 
+             var idsExistentes = asientoExistente.Lineas.Select(linea => linea.Id).ToHashSet();
+-            var idsRecibidos = dto.Lineas.Select(linea => linea.Id!.Value).ToHashSet();
+-            if (!idsExistentes.SetEquals(idsRecibidos))
++            var lineasRecibidasExistentes = dto.Lineas
++                .Where(linea => linea.Id.HasValue)
++                .ToList();
++            if (lineasRecibidasExistentes.Any(linea => linea.Id!.Value <= 0) ||
++                lineasRecibidasExistentes.Select(linea => linea.Id!.Value).Distinct().Count() != lineasRecibidasExistentes.Count)
++            {
++                return Resultado.Falla(AsientoError.RenglonesNoCoinciden);
++            }
++
++            var idsRecibidos = lineasRecibidasExistentes
++                .Select(linea => linea.Id!.Value)
++                .ToHashSet();
++            if (!idsRecibidos.IsSubsetOf(idsExistentes))
+             {
+                 return Resultado.Falla(AsientoError.RenglonesNoCoinciden);
+             }
++            var idsEliminados = idsExistentes.Except(idsRecibidos).ToList();
+ 
+             // B12: Validar que no fue generado por un comprobante padre
+             foreach (var renglonId in idsExistentes)
+@@ -209,6 +215,14 @@ namespace fyd.backend.Aplicacion.Contabilidad.Servicios
+                 }
+             }
+ 
++            foreach (var renglonId in idsEliminados)
++            {
++                if (await _repositorio.TieneReferenciasExternas(renglonId))
++                {
++                    return Resultado.Falla(AsientoError.RenglonReferenciado(renglonId));
++                }
++            }
++
+             // B11: Validar período abierto
+             if (await _repositorio.PeriodoEstaCerrado(dto.Fecha))
+             {
+@@ -280,8 +294,11 @@ namespace fyd.backend.Aplicacion.Contabilidad.Servicios
+             var cotizacionReferenciaExistente = (decimal)(asientoExistente.CotizacionReferencia ?? 0d);
+             foreach (var linea in dto.Lineas)
+             {
+-                var lineaExistente = lineasExistentesPorId[linea.Id!.Value];
+-                var cambioImporte = linea.Importe != (lineaExistente.Importe ?? 0m);
++                var esNueva = !linea.Id.HasValue;
++                var lineaExistente = esNueva
++                    ? null
++                    : lineasExistentesPorId[linea.Id!.Value];
++                var cambioImporte = esNueva || linea.Importe != (lineaExistente!.Importe ?? 0m);
+                 var cambioCotizacionLocal = dto.CotizacionLocal != cotizacionLocalExistente;
+                 var cambioCotizacionReferencia = dto.CotizacionReferencia != cotizacionReferenciaExistente;
+ 
+@@ -290,10 +307,10 @@ namespace fyd.backend.Aplicacion.Contabilidad.Servicios
+                 // la conversión correcta divide por la cotización guardada.
+                 decimal impLocal = cambioImporte || cambioCotizacionLocal
+                     ? linea.Importe / dto.CotizacionLocal
+-                    : lineaExistente.ImpLocal ?? 0m;
++                    : lineaExistente!.ImpLocal ?? 0m;
+                 decimal impReferencia = cambioImporte || cambioCotizacionReferencia
+                     ? linea.Importe / dto.CotizacionReferencia
+-                    : lineaExistente.ImpReferencia ?? 0m;
++                    : lineaExistente!.ImpReferencia ?? 0m;
+ 
+                 var resultadoAsiento = Asiento.Crear(
+                     comprobanteId: comprobante.Id,
+@@ -313,7 +330,10 @@ namespace fyd.backend.Aplicacion.Contabilidad.Servicios
+                 }
+ 
+                 var asiento = resultadoAsiento.Valor!;
+-                asiento.Id = linea.Id!.Value;
++                if (linea.Id.HasValue)
++                {
++                    asiento.Id = linea.Id.Value;
++                }
+                 lineasActualizadas.Add(asiento);
+             }
+ 
+@@ -333,45 +353,57 @@ namespace fyd.backend.Aplicacion.Contabilidad.Servicios
+         // =====================================================
+         // Eliminar Asiento
+         // =====================================================
+-        public async Task<Resultado> EliminarAsiento(int id)
++        public async Task<Resultado> EliminarAsiento(int comprobanteId)
+         {
+-            var asiento = await _repositorio.ObtenerPorId(id);
++            var asiento = await _repositorio.ObtenerPorComprobanteId(comprobanteId);
+ 
+-            if (asiento == null || asiento.Comprobante == null)
++            if (asiento == null)
+             {
+-                return Resultado.Falla(AsientoError.NoEncontrado(id));
++                return Resultado.Falla(AsientoError.NoEncontrado(comprobanteId));
+             }
+ 
+-            // B12: Validar que no fue generado por un comprobante padre
+-            if (await _repositorio.TieneComprobantePadre(asiento.Id))
++            foreach (var linea in asiento.Lineas)
+             {
+-                return Resultado.Falla(AsientoError.GeneradoPorComprobantePadre);
++                // B12: validar que ningún renglón fue generado por otro comprobante.
++                if (await _repositorio.TieneComprobantePadre(linea.Id))
++                {
++                    return Resultado.Falla(AsientoError.GeneradoPorComprobantePadre);
++                }
++
++                if (await _repositorio.TieneReferenciasExternas(linea.Id))
++                {
++                    return Resultado.Falla(AsientoError.RenglonReferenciado(linea.Id));
++                }
++
++                // B13: validar todas las vinculaciones del comprobante.
++                if (await _repositorio.TieneVinculaciones(linea.Id))
++                {
++                    return Resultado.Falla(AsientoError.VinculadoAOtroComprobante);
++                }
+             }
+ 
+             // B11: Validar período abierto
+-            if (await _repositorio.PeriodoEstaCerrado(asiento.Comprobante.Fecha))
++            if (asiento.Fecha.HasValue && await _repositorio.PeriodoEstaCerrado(asiento.Fecha.Value))
+             {
+                 return Resultado.Falla(AsientoError.PeriodoCerrado);
+             }
+ 
+-            if (await _repositorio.PeriodoEstaRenumerado(asiento.Comprobante.Fecha))
++            if (asiento.Fecha.HasValue && await _repositorio.PeriodoEstaRenumerado(asiento.Fecha.Value))
+             {
+                 return Resultado.Falla(AsientoError.PeriodoRenumerado);
+             }
+ 
+-            // B13: Validar que no esté vinculado
+-            if (await _repositorio.TieneVinculaciones(asiento.Id))
++            // B14: Validar que no esté aplicado en Cta. Cte.
++            if (await _repositorio.TieneAplicacionesEnCtaCte(comprobanteId))
+             {
+-                return Resultado.Falla(AsientoError.VinculadoAOtroComprobante);
++                return Resultado.Falla(AsientoError.AplicadoEnCtaCte);
+             }
+ 
+-            // B14: Validar que no esté aplicado en Cta. Cte.
+-            if (await _repositorio.TieneAplicacionesEnCtaCte(asiento.ComprobanteId))
++            if (!await _repositorio.EliminarPorComprobanteId(comprobanteId))
+             {
+-                return Resultado.Falla(AsientoError.AplicadoEnCtaCte);
++                return Resultado.Falla(AsientoError.NoEncontrado(comprobanteId));
+             }
+ 
+-            _repositorio.Eliminar(asiento);
+             await _unidadDeTrabajo.GuardarCambios();
+ 
+             return Resultado.Exito();
+diff --git a/src/fyd.backend.Dominio/Contabilidad/Consultas/AsientoConsulta.cs b/src/fyd.backend.Dominio/Contabilidad/Consultas/AsientoConsulta.cs
+index 997236d..01d17aa 100644
+--- a/src/fyd.backend.Dominio/Contabilidad/Consultas/AsientoConsulta.cs
++++ b/src/fyd.backend.Dominio/Contabilidad/Consultas/AsientoConsulta.cs
+@@ -14,6 +14,7 @@ public class AsientoConsulta
+     public int? EmpresaId { get; set; }
+     public string? EmpresaNombre { get; set; }
+     public int? MonedaId { get; set; }
++    public string? MonedaCodigo { get; set; }
+     public string? MonedaNombre { get; set; }
+     public double? CotizacionLocal { get; set; }
+     public double? CotizacionReferencia { get; set; }
+diff --git a/src/fyd.backend.Dominio/Contabilidad/Consultas/CstctbAsientosReadModel.cs b/src/fyd.backend.Dominio/Contabilidad/Consultas/CstctbAsientosReadModel.cs
+index cbcbfea..a4d0f54 100644
+--- a/src/fyd.backend.Dominio/Contabilidad/Consultas/CstctbAsientosReadModel.cs
++++ b/src/fyd.backend.Dominio/Contabilidad/Consultas/CstctbAsientosReadModel.cs
+@@ -14,7 +14,7 @@ namespace fyd.backend.Dominio.Contabilidad.Consultas
+         public int NumeraTipoID { get; set; }
+         public string NumeraTipoSimbolo { get; set; }
+         public int NumeracionID { get; set; }
+-        public int Numero { get; set; }
++        public int? Numero { get; set; }
+ 
+         //Debe cuenta
+         public int? DebeCuentaID { get; set; }
+diff --git a/src/fyd.backend.Dominio/Contabilidad/Errores/AsientoCodigoError.cs b/src/fyd.backend.Dominio/Contabilidad/Errores/AsientoCodigoError.cs
+index d991640..f206457 100644
+--- a/src/fyd.backend.Dominio/Contabilidad/Errores/AsientoCodigoError.cs
++++ b/src/fyd.backend.Dominio/Contabilidad/Errores/AsientoCodigoError.cs
+@@ -22,10 +22,12 @@ namespace fyd.backend.Dominio.Contabilidad.Errores
+         public const string VinculadoAOtroComprobante = "Asiento.VinculadoAOtroComprobante";
+         public const string AplicadoEnCtaCte = "Asiento.AplicadoEnCtaCte";
+         public const string CotizacionInvalida = "Asiento.CotizacionInvalida";
++        public const string PuntoVentaInvalido = "Asiento.PuntoVentaInvalido";
+         public const string SubcuentaCajaInvalida = "Asiento.SubcuentaCajaInvalida";
+         public const string CajaBancariaConciliada = "Asiento.CajaBancariaConciliada";
+         public const string PeriodoRenumerado = "Asiento.PeriodoRenumerado";
+         public const string ComprobanteConNumeroAsiento = "Asiento.ComprobanteConNumeroAsiento";
+         public const string RenglonesNoCoinciden = "Asiento.RenglonesNoCoinciden";
++        public const string RenglonReferenciado = "Asiento.RenglonReferenciado";
+     }
+ }
+diff --git a/src/fyd.backend.Dominio/Contabilidad/Errores/AsientoError.cs b/src/fyd.backend.Dominio/Contabilidad/Errores/AsientoError.cs
+index b9290fa..9a62ff5 100644
+--- a/src/fyd.backend.Dominio/Contabilidad/Errores/AsientoError.cs
++++ b/src/fyd.backend.Dominio/Contabilidad/Errores/AsientoError.cs
+@@ -109,6 +109,11 @@ namespace fyd.backend.Dominio.Contabilidad.Errores
+             "La cotización local y la cotización de referencia deben ser mayores a cero.",
+             TipoDeError.Validacion);
+ 
++        public static Error PuntoVentaInvalido(int puntoVenta, int numeraTipoId) => new(
++            AsientoCodigoError.PuntoVentaInvalido,
++            $"El punto de venta {puntoVenta} no corresponde a la numeración {numeraTipoId}.",
++            TipoDeError.Validacion);
++
+         public static Error SubcuentaCajaInvalida(int cuentaId) => new(
+             AsientoCodigoError.SubcuentaCajaInvalida,
+             $"La cuenta contable {cuentaId} no puede tener subcuenta de caja para este tipo de movimiento.",
+@@ -131,7 +136,12 @@ namespace fyd.backend.Dominio.Contabilidad.Errores
+ 
+         public static Error RenglonesNoCoinciden => new(
+             AsientoCodigoError.RenglonesNoCoinciden,
+-            "Los renglones enviados no coinciden con los renglones existentes del comprobante. En esta etapa no se permite agregar ni eliminar renglones.",
++            "Los renglones existentes enviados no pertenecen al comprobante o están repetidos. Los renglones nuevos deben enviarse sin ID.",
++            TipoDeError.Conflicto);
++
++        public static Error RenglonReferenciado(int renglonId) => new(
++            AsientoCodigoError.RenglonReferenciado,
++            $"El renglón {renglonId} está relacionado con un comprobante de Ventas, Compras o Fondos y no puede eliminarse.",
+             TipoDeError.Conflicto);
+     }
+ }
+diff --git a/src/fyd.backend.Dominio/Contabilidad/Repositorios/IAsientoRepositorio.cs b/src/fyd.backend.Dominio/Contabilidad/Repositorios/IAsientoRepositorio.cs
+index 117d69a..55981be 100644
+--- a/src/fyd.backend.Dominio/Contabilidad/Repositorios/IAsientoRepositorio.cs
++++ b/src/fyd.backend.Dominio/Contabilidad/Repositorios/IAsientoRepositorio.cs
+@@ -7,7 +7,10 @@ namespace fyd.backend.Dominio.Contabilidad.Repositorios
+     {
+         // --- CRUD básico ---
+         Task Agregar(Asiento asiento);
+-        void Eliminar(Asiento asiento);
++        Task<int> CrearPorComprobante(
++            Comprobante comprobante,
++            IReadOnlyCollection<Asiento> lineas);
++        Task<bool> EliminarPorComprobanteId(int comprobanteId);
+         Task<Asiento?> ObtenerPorId(int id);
+         Task<fyd.backend.Dominio.Contabilidad.Consultas.AsientoConsulta?> ObtenerPorComprobanteId(int comprobanteId);
+         Task<bool> ActualizarPorComprobanteId(
+@@ -18,6 +21,7 @@ namespace fyd.backend.Dominio.Contabilidad.Repositorios
+         Task<bool> ExisteCuenta(int cuentaId);
+         Task<int?> ObtenerEmpresaIdDeCuenta(int cuentaId);
+         Task<bool> CuentaPermiteAsiento(int cuentaId);
++        Task<int?> ObtenerPuntoVentaNumeracion(int numeraTipoId);
+ 
+         // --- Validaciones de Cliente (B4, B5) ---
+         Task<bool> ExisteCliente(int clienteId);
+@@ -34,6 +38,7 @@ namespace fyd.backend.Dominio.Contabilidad.Repositorios
+         // --- Validaciones de Período y Comprobante (B11, B12, B13, B14) ---
+         Task<bool> PeriodoEstaCerrado(DateTime fecha);
+         Task<bool> TieneComprobantePadre(int asientoId);
++        Task<bool> TieneReferenciasExternas(int asientoId);
+         Task<bool> TieneVinculaciones(int asientoId);
+         Task<bool> TieneAplicacionesEnCtaCte(int comprobanteId);
+         Task<bool> CuentaTieneSubcuentaCaja(int cuentaId);
+diff --git a/src/fyd.backend.Dominio/General/Entidades/Comprobante.cs b/src/fyd.backend.Dominio/General/Entidades/Comprobante.cs
+index 0cb78ae..fbbc137 100644
+--- a/src/fyd.backend.Dominio/General/Entidades/Comprobante.cs
++++ b/src/fyd.backend.Dominio/General/Entidades/Comprobante.cs
+@@ -12,7 +12,7 @@ namespace fyd.backend.Dominio.General.Entidades
+         public DateTime Fecha { get; set; }
+         public DateTime FechaEmision { get; set; }
+         public int NumeraTipoId { get; set; }
+-        public int Numero { get; set; }
++        public int? Numero { get; set; }
+         public int EmpresaId { get; set; }
+         public int MonedaId { get; set; }
+         public double CotizacionLocal { get; set; }
+@@ -29,7 +29,7 @@ namespace fyd.backend.Dominio.General.Entidades
+             DateTime fecha,
+             DateTime fechaEmision,
+             int numeraTipoId,
+-            int numero,
++            int? numero,
+             int empresaId,
+             int monedaId,
+             double cotizacionLocal,
+@@ -60,7 +60,7 @@ namespace fyd.backend.Dominio.General.Entidades
+             DateTime fecha,
+             DateTime fechaEmision,
+             int numeraTipoId,
+-            int numero,
++            int? numero,
+             int empresaId,
+             int monedaId,
+             double cotizacionLocal,
+diff --git a/src/fyd.backend.Infraestructura/Contabilidad/Repositorios/AsientoRepositorio.cs b/src/fyd.backend.Infraestructura/Contabilidad/Repositorios/AsientoRepositorio.cs
+index 3c7d212..2f5c9c1 100644
+--- a/src/fyd.backend.Infraestructura/Contabilidad/Repositorios/AsientoRepositorio.cs
++++ b/src/fyd.backend.Infraestructura/Contabilidad/Repositorios/AsientoRepositorio.cs
+@@ -42,9 +42,150 @@ namespace fyd.backend.Infraestructura.Contabilidad.Repositorios
+             await _contexto.Asientos.AddAsync(AsientoMapeo.AEntidad(asiento));
+         }
+ 
+-        public void Eliminar(Asiento asiento)
++        public async Task<int> CrearPorComprobante(
++            Comprobante comprobante,
++            IReadOnlyCollection<Asiento> lineas)
++        {
++            if (!comprobante.Numero.HasValue && _contexto.Database.IsRelational())
++            {
++                await using var transaccion = await _contexto.Database.BeginTransactionAsync();
++                var numeroReservado = await ReservarSiguienteNumero(comprobante.NumeraTipoId);
++                var entidadConNumero = CrearEntidad(comprobante, lineas, numeroReservado);
++
++                _contexto.ComprobantesContables.Add(entidadConNumero);
++                await _contexto.SaveChangesAsync();
++                await transaccion.CommitAsync();
++                return entidadConNumero.Id;
++            }
++
++            var numero = comprobante.Numero;
++            if (!numero.HasValue)
++            {
++                numero = await ReservarSiguienteNumeroEnMemoria(comprobante.NumeraTipoId);
++            }
++
++            var entidad = CrearEntidad(comprobante, lineas, numero.Value);
++
++            _contexto.ComprobantesContables.Add(entidad);
++            await _contexto.SaveChangesAsync();
++            return entidad.Id;
++        }
++
++        private static fyd.backend.Infraestructura.General.Entidades.Comprobante CrearEntidad(
++            Comprobante comprobante,
++            IReadOnlyCollection<Asiento> lineas,
++            int numero)
++        {
++            var entidad = new fyd.backend.Infraestructura.General.Entidades.Comprobante
++            {
++                Fecha = comprobante.Fecha,
++                FechaEmision = comprobante.FechaEmision,
++                NumeraTipoId = comprobante.NumeraTipoId,
++                Numero = numero,
++                EmpresaId = comprobante.EmpresaId,
++                MonedaId = comprobante.MonedaId,
++                CotizacionLocal = comprobante.CotizacionLocal,
++                CotizacionReferencia = comprobante.CotizacionReferencia,
++                ImpTotal = comprobante.ImpTotal,
++                Detalle = comprobante.Detalle,
++                Memo = comprobante.Memo
++            };
++
++            foreach (var linea in lineas)
++            {
++                var lineaEntidad = AsientoMapeo.AEntidad(linea);
++                lineaEntidad.ComprobanteId = null;
++                lineaEntidad.Comprobante = entidad;
++                entidad.Asientos.Add(lineaEntidad);
++            }
++
++            return entidad;
++        }
++
++        private async Task<int> ReservarSiguienteNumero(int numeraTipoId)
++        {
++            const int intentosMaximos = 5;
++
++            for (var intento = 1; intento <= intentosMaximos; intento++)
++            {
++                var configuracion = await _contexto.NumeraTipos
++                    .AsNoTracking()
++                    .Where(item => item.Id == numeraTipoId)
++                    .Select(item => new
++                    {
++                        item.NumeracionId,
++                        NumeroActual = item.Numeracion == null ? null : item.Numeracion.Numero,
++                        NumeradorTipo = item.Numeracion == null ? null : item.Numeracion.NumeradorTipo
++                    })
++                    .SingleOrDefaultAsync();
++
++                ValidarNumeracionAutomatica(configuracion?.NumeracionId, configuracion?.NumeradorTipo, numeraTipoId);
++
++                var numeroActual = configuracion!.NumeroActual;
++                var siguienteNumero = checked((numeroActual ?? 0) + 1);
++                var filasActualizadas = await _contexto.Numeraciones
++                    .Where(item => item.Id == configuracion.NumeracionId!.Value && item.Numero == numeroActual)
++                    .ExecuteUpdateAsync(actualizacion => actualizacion
++                        .SetProperty(item => item.Numero, siguienteNumero));
++
++                if (filasActualizadas == 1)
++                {
++                    return siguienteNumero;
++                }
++            }
++
++            throw new InvalidOperationException(
++                $"No se pudo reservar un número para NumeraTipoID {numeraTipoId} después de {intentosMaximos} intentos concurrentes.");
++        }
++
++        private async Task<int> ReservarSiguienteNumeroEnMemoria(int numeraTipoId)
++        {
++            var numeraTipo = await _contexto.NumeraTipos
++                .Include(item => item.Numeracion)
++                .SingleOrDefaultAsync(item => item.Id == numeraTipoId);
++
++            ValidarNumeracionAutomatica(
++                numeraTipo?.NumeracionId,
++                numeraTipo?.Numeracion?.NumeradorTipo,
++                numeraTipoId);
++
++            var siguienteNumero = checked((numeraTipo!.Numeracion!.Numero ?? 0) + 1);
++            numeraTipo.Numeracion.Numero = siguienteNumero;
++            return siguienteNumero;
++        }
++
++        private static void ValidarNumeracionAutomatica(
++            int? numeracionId,
++            int? numeradorTipo,
++            int numeraTipoId)
+         {
+-            _contexto.Asientos.Remove(AsientoMapeo.AEntidad(asiento));
++            if (!numeracionId.HasValue)
++            {
++                throw new InvalidOperationException(
++                    $"NumeraTipoID {numeraTipoId} no tiene una numeración configurada.");
++            }
++
++            if (numeradorTipo == 1)
++            {
++                throw new InvalidOperationException(
++                    $"NumeraTipoID {numeraTipoId} usa numeración manual y requiere un número informado.");
++            }
++        }
++
++        public async Task<bool> EliminarPorComprobanteId(int comprobanteId)
++        {
++            var comprobante = await _contexto.ComprobantesContables
++                .Include(item => item.Asientos)
++                .SingleOrDefaultAsync(item => item.Id == comprobanteId && item.Asientos.Any());
++
++            if (comprobante is null)
++            {
++                return false;
++            }
++
++            _contexto.Asientos.RemoveRange(comprobante.Asientos);
++            _contexto.ComprobantesContables.Remove(comprobante);
++            return true;
+         }
+ 
+         public async Task<Asiento?> ObtenerPorId(int id)
+@@ -77,6 +218,7 @@ namespace fyd.backend.Infraestructura.Contabilidad.Repositorios
+                     EmpresaId = c.EmpresaId,
+                     EmpresaNombre = c.Empresa == null || c.Empresa.Agenda == null ? null : c.Empresa.Agenda.Nombre,
+                     MonedaId = c.MonedaId,
++                    MonedaCodigo = c.Moneda == null ? null : c.Moneda.Codigo,
+                     MonedaNombre = c.Moneda == null ? null : c.Moneda.Nombre,
+                     CotizacionLocal = c.CotizacionLocal,
+                     CotizacionReferencia = c.CotizacionReferencia,
+@@ -245,11 +387,16 @@ namespace fyd.backend.Infraestructura.Contabilidad.Repositorios
+             }
+ 
+             var idsExistentes = entidad.Asientos.Select(linea => linea.Id).ToHashSet();
+-            var idsRecibidos = lineas.Select(linea => linea.Id).ToHashSet();
+-            if (idsRecibidos.Count != lineas.Count || !idsExistentes.SetEquals(idsRecibidos))
++            var lineasExistentes = lineas.Where(linea => linea.Id > 0).ToList();
++            var lineasNuevas = lineas.Where(linea => linea.Id == 0).ToList();
++            var idsRecibidos = lineasExistentes.Select(linea => linea.Id).ToHashSet();
++            if (lineas.Any(linea => linea.Id < 0) ||
++                idsRecibidos.Count != lineasExistentes.Count ||
++                !idsRecibidos.IsSubsetOf(idsExistentes))
+             {
+                 return false;
+             }
++            var idsEliminados = idsExistentes.Except(idsRecibidos).ToHashSet();
+ 
+             entidad.Fecha = comprobante.Fecha;
+             entidad.FechaEmision = comprobante.FechaEmision;
+@@ -263,9 +410,15 @@ namespace fyd.backend.Infraestructura.Contabilidad.Repositorios
+             entidad.Detalle = comprobante.Detalle;
+             entidad.Memo = comprobante.Memo;
+ 
+-            var lineasPorId = lineas.ToDictionary(linea => linea.Id);
+-            foreach (var lineaEntidad in entidad.Asientos)
++            var lineasPorId = lineasExistentes.ToDictionary(linea => linea.Id);
++            foreach (var lineaEntidad in entidad.Asientos.ToList())
+             {
++                if (idsEliminados.Contains(lineaEntidad.Id))
++                {
++                    _contexto.Asientos.Remove(lineaEntidad);
++                    continue;
++                }
++
+                 var linea = lineasPorId[lineaEntidad.Id];
+                 lineaEntidad.CuentaId = linea.CuentaId;
+                 lineaEntidad.Tipo = linea.Tipo;
+@@ -275,6 +428,11 @@ namespace fyd.backend.Infraestructura.Contabilidad.Repositorios
+                 lineaEntidad.Detalle = linea.Detalle;
+             }
+ 
++            foreach (var lineaNueva in lineasNuevas)
++            {
++                entidad.Asientos.Add(AsientoMapeo.AEntidad(lineaNueva));
++            }
++
+             return true;
+         }
+ 
+@@ -400,6 +558,22 @@ namespace fyd.backend.Infraestructura.Contabilidad.Repositorios
+             return Task.FromResult(false); // Escenario positivo: sin comprobante padre
+         }
+ 
++        public async Task<int?> ObtenerPuntoVentaNumeracion(int numeraTipoId)
++        {
++            return await _contexto.NumeraTipos
++                .AsNoTracking()
++                .Where(item => item.Id == numeraTipoId)
++                .Select(item => item.Numeracion == null ? null : item.Numeracion.PuntoVenta)
++                .SingleOrDefaultAsync();
++        }
++
++        public async Task<bool> TieneReferenciasExternas(int asientoId)
++        {
++            return await _contexto.VentaComprobantes.AnyAsync(item => item.AsientoId == asientoId) ||
++                   await _contexto.CompraComprobantes.AnyAsync(item => item.AsientoId == asientoId) ||
++                   await _contexto.FondoComprobantes.AnyAsync(item => item.AsientoId == asientoId);
++        }
++
+         public Task<bool> TieneVinculaciones(int asientoId)
+         {
+             // TODO: Implementar cuando exista la tabla gnrVinculaciones.
+diff --git a/tests/fyd.backend.IntegrationTests/AsientoServicioTest.cs b/tests/fyd.backend.IntegrationTests/AsientoServicioTest.cs
+index 1cce117..085967d 100644
+--- a/tests/fyd.backend.IntegrationTests/AsientoServicioTest.cs
++++ b/tests/fyd.backend.IntegrationTests/AsientoServicioTest.cs
+@@ -39,6 +39,20 @@ namespace fyd.backend.IntegrationTests
+             var infraCuentaDebe = CuentaContableMapeo.AEntidad(cuentaDebe);
+             var infraCuentaHaber = CuentaContableMapeo.AEntidad(cuentaHaber);
+             contexto.CuentasContables.AddRange(infraCuentaDebe, infraCuentaHaber);
++            var numeracion = new fyd.backend.Infraestructura.General.Entidades.Numeracion
++            {
++                Id = 1,
++                PuntoVenta = null,
++                Numero = 1069,
++                NumeradorTipo = 2
++            };
++            contexto.Numeraciones.Add(numeracion);
++            contexto.NumeraTipos.Add(new fyd.backend.Infraestructura.General.Entidades.NumeraTipo
++            {
++                Id = 1,
++                NumeracionId = 1,
++                Numeracion = numeracion
++            });
+             await contexto.SaveChangesAsync();
+             cuentaDebe.Id = infraCuentaDebe.Id;
+             cuentaHaber.Id = infraCuentaHaber.Id;
+@@ -59,6 +73,7 @@ namespace fyd.backend.IntegrationTests
+                 CotizacionReferencia: 100,
+                 Detalle: "Pago a Proveedor",
+                 Observaciones: "Test Integration",
++                PuntoVenta: null,
+                 Lineas: new List<CrearAsientoLineaDto>
+                 {
+                     new CrearAsientoLineaDto(cuentaDebe.Id, 1, 500m, "D", null, null, null),
+@@ -73,12 +88,15 @@ namespace fyd.backend.IntegrationTests
+ 
+             var asientosBd = await contexto.Asientos.ToListAsync();
+             Assert.HasCount(2, asientosBd, "Deberían haberse guardado 2 líneas de asiento en la BD");
+-
+-            //TODO: Validar si esto tiene sentido. Se hizo con copilot.            
+-            // var comprobantesBd = await contexto.Set<fyd.backend.Infraestructura.General.Entidades.Comprobante>().ToListAsync();
+-            // Assert.HasCount(1, comprobantesBd, "Debería haberse guardado 1 comprobante de cabecera");
+-
+-            // Assert.AreEqual(500m, comprobantesBd.First().ImpTotal, "El importe total del comprobante debe ser la suma del debe");
++            var comprobantesBd = await contexto.ComprobantesContables.ToListAsync();
++            Assert.HasCount(1, comprobantesBd, "Debería haberse guardado 1 comprobante de cabecera");
++            Assert.AreEqual(resultado.Valor, comprobantesBd.Single().Id);
++            Assert.AreEqual(500m, comprobantesBd.Single().ImpTotal, "El importe total del comprobante debe ser la suma del debe");
++            Assert.AreEqual(1070, comprobantesBd.Single().Numero,
++                "Una numeración automática debe asignar el siguiente número al comprobante");
++            Assert.AreEqual(1070, (await contexto.Numeraciones.SingleAsync()).Numero,
++                "La reserva debe avanzar la numeración junto con el alta");
++            Assert.IsTrue(asientosBd.All(linea => linea.ComprobanteId == resultado.Valor));
+         }
+ 
+         [TestMethod]
+@@ -100,6 +118,14 @@ namespace fyd.backend.IntegrationTests
+ 
+             var infraCuenta = CuentaContableMapeo.AEntidad(cuenta);
+             contexto.CuentasContables.Add(infraCuenta);
++            var numeracion = new fyd.backend.Infraestructura.General.Entidades.Numeracion { Id = 1, PuntoVenta = 1 };
++            contexto.Numeraciones.Add(numeracion);
++            contexto.NumeraTipos.Add(new fyd.backend.Infraestructura.General.Entidades.NumeraTipo
++            {
++                Id = 1,
++                NumeracionId = 1,
++                Numeracion = numeracion
++            });
+             await contexto.SaveChangesAsync();
+             cuenta.Id = infraCuenta.Id;
+ 
+@@ -119,6 +145,7 @@ namespace fyd.backend.IntegrationTests
+                 CotizacionReferencia: 10,
+                 Detalle: "Error asientoo",
+                 Observaciones: null,
++                PuntoVenta: 1,
+                 Lineas: new List<CrearAsientoLineaDto>
+                 {
+                     new CrearAsientoLineaDto(cuenta.Id, 1, 100m, "D", null, null, null),
+@@ -194,5 +221,171 @@ namespace fyd.backend.IntegrationTests
+             Assert.AreEqual(125m, persistido.ImpTotal);
+             Assert.AreEqual(11, persistido.Asientos.Single(linea => linea.Id == idsOriginales[0]).CuentaId);
+         }
++
++        [TestMethod]
++        public async Task ActualizarPorComprobanteId_AgregaRenglonYConservaLosIdsExistentes()
++        {
++            var opciones = new DbContextOptionsBuilder<ContextoAplicacion>()
++                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
++                .Options;
++            await using var contexto = new ContextoAplicacion(opciones);
++            var cabeceraInfra = new fyd.backend.Infraestructura.General.Entidades.Comprobante
++            {
++                Fecha = DateTime.Today,
++                FechaEmision = DateTime.Today,
++                NumeraTipoId = 1,
++                Numero = 10,
++                EmpresaId = 1,
++                MonedaId = 1,
++                CotizacionLocal = 1,
++                CotizacionReferencia = 1000,
++                Detalle = "Original"
++            };
++            cabeceraInfra.Asientos.Add(new fyd.backend.Infraestructura.Contabilidad.Entidades.Asiento
++            {
++                CuentaId = 10, Tipo = 1, Importe = 100, ImpLocal = 100,
++                ImpReferencia = 0.1m, Detalle = "Debe"
++            });
++            cabeceraInfra.Asientos.Add(new fyd.backend.Infraestructura.Contabilidad.Entidades.Asiento
++            {
++                CuentaId = 20, Tipo = -1, Importe = 100, ImpLocal = 100,
++                ImpReferencia = 0.1m, Detalle = "Haber"
++            });
++            contexto.ComprobantesContables.Add(cabeceraInfra);
++            await contexto.SaveChangesAsync();
++            var idsOriginales = cabeceraInfra.Asientos.Select(linea => linea.Id).Order().ToArray();
++
++            var comprobante = fyd.backend.Dominio.General.Entidades.Comprobante.Crear(
++                DateTime.Today, DateTime.Today, 1, 10, 1, 1, 1, 1000,
++                125, "Actualizado", "Observación").Valor!;
++            comprobante.Id = cabeceraInfra.Id;
++            var lineas = new[]
++            {
++                Asiento.Crear(comprobante.Id, 10, 1, 100, 100, 0.1m, "Debe").Valor!,
++                Asiento.Crear(comprobante.Id, 20, -1, 100, 100, 0.1m, "Haber").Valor!,
++                Asiento.Crear(comprobante.Id, 30, 1, 25, 25, 0.025m, "Nuevo").Valor!
++            };
++            lineas[0].Id = idsOriginales[0];
++            lineas[1].Id = idsOriginales[1];
++            var repositorio = new AsientoRepositorio(contexto);
++
++            var actualizado = await repositorio.ActualizarPorComprobanteId(comprobante, lineas);
++            await contexto.SaveChangesAsync();
++            contexto.ChangeTracker.Clear();
++
++            var persistido = await contexto.ComprobantesContables
++                .Include(item => item.Asientos)
++                .SingleAsync(item => item.Id == cabeceraInfra.Id);
++            Assert.IsTrue(actualizado);
++            Assert.HasCount(3, persistido.Asientos);
++            Assert.IsTrue(idsOriginales.All(id => persistido.Asientos.Any(linea => linea.Id == id)));
++            Assert.IsTrue(persistido.Asientos.Any(linea => !idsOriginales.Contains(linea.Id) && linea.CuentaId == 30));
++        }
++
++        [TestMethod]
++        public async Task ActualizarPorComprobanteId_EliminaSoloElRenglonOmitido()
++        {
++            var opciones = new DbContextOptionsBuilder<ContextoAplicacion>()
++                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
++                .Options;
++            await using var contexto = new ContextoAplicacion(opciones);
++            var cabeceraInfra = new fyd.backend.Infraestructura.General.Entidades.Comprobante
++            {
++                Fecha = DateTime.Today,
++                FechaEmision = DateTime.Today,
++                NumeraTipoId = 1,
++                Numero = 10,
++                EmpresaId = 1,
++                MonedaId = 1,
++                CotizacionLocal = 1,
++                CotizacionReferencia = 1000,
++                Detalle = "Original"
++            };
++            cabeceraInfra.Asientos.Add(new fyd.backend.Infraestructura.Contabilidad.Entidades.Asiento
++            {
++                CuentaId = 10, Tipo = 1, Importe = 100, ImpLocal = 100,
++                ImpReferencia = 0.1m, Detalle = "Debe"
++            });
++            cabeceraInfra.Asientos.Add(new fyd.backend.Infraestructura.Contabilidad.Entidades.Asiento
++            {
++                CuentaId = 20, Tipo = -1, Importe = 100, ImpLocal = 100,
++                ImpReferencia = 0.1m, Detalle = "Haber"
++            });
++            cabeceraInfra.Asientos.Add(new fyd.backend.Infraestructura.Contabilidad.Entidades.Asiento
++            {
++                CuentaId = 30, Tipo = 1, Importe = 25, ImpLocal = 25,
++                ImpReferencia = 0.025m, Detalle = "Eliminar"
++            });
++            contexto.ComprobantesContables.Add(cabeceraInfra);
++            await contexto.SaveChangesAsync();
++            var idsOriginales = cabeceraInfra.Asientos.Select(linea => linea.Id).Order().ToArray();
++
++            var comprobante = fyd.backend.Dominio.General.Entidades.Comprobante.Crear(
++                DateTime.Today, DateTime.Today, 1, 10, 1, 1, 1, 1000,
++                100, "Actualizado", "Observación").Valor!;
++            comprobante.Id = cabeceraInfra.Id;
++            var lineas = new[]
++            {
++                Asiento.Crear(comprobante.Id, 10, 1, 100, 100, 0.1m, "Debe").Valor!,
++                Asiento.Crear(comprobante.Id, 20, -1, 100, 100, 0.1m, "Haber").Valor!
++            };
++            lineas[0].Id = idsOriginales[0];
++            lineas[1].Id = idsOriginales[1];
++            var repositorio = new AsientoRepositorio(contexto);
++
++            var actualizado = await repositorio.ActualizarPorComprobanteId(comprobante, lineas);
++            await contexto.SaveChangesAsync();
++            contexto.ChangeTracker.Clear();
++
++            var persistido = await contexto.ComprobantesContables
++                .Include(item => item.Asientos)
++                .SingleAsync(item => item.Id == cabeceraInfra.Id);
++            Assert.IsTrue(actualizado);
++            Assert.HasCount(2, persistido.Asientos);
++            CollectionAssert.AreEquivalent(
++                idsOriginales.Take(2).ToArray(),
++                persistido.Asientos.Select(linea => linea.Id).ToArray());
++            Assert.IsFalse(persistido.Asientos.Any(linea => linea.Id == idsOriginales[2]));
++        }
++
++        [TestMethod]
++        public async Task EliminarPorComprobanteId_EliminaCabeceraYTodosLosRenglones()
++        {
++            var opciones = new DbContextOptionsBuilder<ContextoAplicacion>()
++                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
++                .Options;
++            await using var contexto = new ContextoAplicacion(opciones);
++            var cabecera = new fyd.backend.Infraestructura.General.Entidades.Comprobante
++            {
++                Fecha = DateTime.Today,
++                FechaEmision = DateTime.Today,
++                NumeraTipoId = 1,
++                Numero = 10,
++                EmpresaId = 1,
++                MonedaId = 1,
++                CotizacionLocal = 1,
++                CotizacionReferencia = 1000,
++                Detalle = "Eliminar"
++            };
++            cabecera.Asientos.Add(new fyd.backend.Infraestructura.Contabilidad.Entidades.Asiento
++            {
++                CuentaId = 10, Tipo = 1, Importe = 100, ImpLocal = 100, ImpReferencia = 0.1m
++            });
++            cabecera.Asientos.Add(new fyd.backend.Infraestructura.Contabilidad.Entidades.Asiento
++            {
++                CuentaId = 20, Tipo = -1, Importe = 100, ImpLocal = 100, ImpReferencia = 0.1m
++            });
++            contexto.ComprobantesContables.Add(cabecera);
++            await contexto.SaveChangesAsync();
++
++            var repositorio = new AsientoRepositorio(contexto);
++            var encontrado = await repositorio.EliminarPorComprobanteId(cabecera.Id);
++            await contexto.SaveChangesAsync();
++            contexto.ChangeTracker.Clear();
++
++            Assert.IsTrue(encontrado);
++            Assert.IsFalse(await contexto.ComprobantesContables.AnyAsync(item => item.Id == cabecera.Id));
++            Assert.IsFalse(await contexto.Asientos.AnyAsync(item => item.ComprobanteId == cabecera.Id));
++        }
+     }
+ }
+diff --git a/tests/fyd.backend.UnitTests/API/Controllers/Contabilidad/AsientoControllerTest.cs b/tests/fyd.backend.UnitTests/API/Controllers/Contabilidad/AsientoControllerTest.cs
+index dfd6c70..79032ed 100644
+--- a/tests/fyd.backend.UnitTests/API/Controllers/Contabilidad/AsientoControllerTest.cs
++++ b/tests/fyd.backend.UnitTests/API/Controllers/Contabilidad/AsientoControllerTest.cs
+@@ -60,7 +60,8 @@ namespace fyd.backend.UnitTests.API.Controllers.Contabilidad
+                 EmpresaId: 1,
+                 EmpresaNombre: "Empresa",
+                 MonedaId: 1,
+-                MonedaNombre: "ARS",
++                MonedaCodigo: "ARS",
++                MonedaNombre: "Pesos Argentinos",
+                 CotizacionLocal: 1,
+                 CotizacionReferencia: 1,
+                 ImpTotal: 100,
+@@ -106,7 +107,7 @@ namespace fyd.backend.UnitTests.API.Controllers.Contabilidad
+         {
+             // Arrange
+             var dto = new CrearAsientoDto(
+-                DateTime.Now, DateTime.Now, 1, 100, 1, 1, 1, 1, "Test", "Obs",
++                DateTime.Now, DateTime.Now, 1, 100, 1, 1, 1, 1, "Test", "Obs", 1,
+                 new List<CrearAsientoLineaDto>()
+             );
+             _servicioMock.Setup(s => s.CrearAsiento(dto)).ReturnsAsync(Resultado<int>.Exito(10));
+diff --git a/tests/fyd.backend.UnitTests/Aplicacion/Contabilidad/Servicios/AsientoServicioTest.cs b/tests/fyd.backend.UnitTests/Aplicacion/Contabilidad/Servicios/AsientoServicioTest.cs
+index faff345..e2a04c4 100644
+--- a/tests/fyd.backend.UnitTests/Aplicacion/Contabilidad/Servicios/AsientoServicioTest.cs
++++ b/tests/fyd.backend.UnitTests/Aplicacion/Contabilidad/Servicios/AsientoServicioTest.cs
+@@ -30,6 +30,11 @@ namespace fyd.backend.UnitTests.Aplicacion.Contabilidad.Servicios
+             _repositorio.Setup(r => r.CuentaPermiteAsiento(It.IsAny<int>())).ReturnsAsync(true);
+             _repositorio.Setup(r => r.CuentaTieneSubcuentaCaja(It.IsAny<int>())).ReturnsAsync(false);
+             _repositorio.Setup(r => r.ObtenerEmpresaIdDeCuenta(It.IsAny<int>())).ReturnsAsync((int?)null);
++            _repositorio.Setup(r => r.TieneReferenciasExternas(It.IsAny<int>())).ReturnsAsync(false);
++            _repositorio.Setup(r => r.ObtenerPuntoVentaNumeracion(It.IsAny<int>())).ReturnsAsync(1);
++            _repositorio.Setup(r => r.CrearPorComprobante(
++                It.IsAny<Comprobante>(),
++                It.IsAny<IReadOnlyCollection<Asiento>>())).ReturnsAsync(10);
+ 
+             var cb = Comprobante.Crear(DateTime.Now, DateTime.Now, 1, 1, 1, 1, 1, 1, 100, "Test", "Memo").Valor!;
+             SetId(cb, 1);
+@@ -76,7 +81,7 @@ namespace fyd.backend.UnitTests.Aplicacion.Contabilidad.Servicios
+         {
+             var consulta = new AsientoConsulta
+             {
+-                Id = 184103, EmpresaNombre = "Empresa prueba", MonedaNombre = "Pesos Argentinos",
++                Id = 184103, EmpresaNombre = "Empresa prueba", MonedaCodigo = "ARS", MonedaNombre = "Pesos Argentinos",
+                 NumeraTipoSimbolo = "As", Letra = "A", PuntoVenta = 5,
+                 Lineas = new List<AsientoLineaConsulta>
+                 {
+@@ -101,6 +106,7 @@ namespace fyd.backend.UnitTests.Aplicacion.Contabilidad.Servicios
+             var dto = resultado.Valor!;
+             Assert.AreEqual(184103, dto.Id);
+             Assert.AreEqual("Empresa prueba", dto.EmpresaNombre);
++            Assert.AreEqual("ARS", dto.MonedaCodigo);
+             Assert.AreEqual("Pesos Argentinos", dto.MonedaNombre);
+             Assert.AreEqual("As", dto.NumeraTipoSimbolo);
+             Assert.AreEqual("A", dto.Letra);
+@@ -155,7 +161,7 @@ namespace fyd.backend.UnitTests.Aplicacion.Contabilidad.Servicios
+         public async Task CrearAsiento_CotizacionInvalida_RetornaCotizacionInvalida()
+         {
+             var dto = new CrearAsientoDto(
+-                DateTime.Now, DateTime.Now, 1, 100, 1, 1, 0, 1, "Test", "Obs",
++                DateTime.Now, DateTime.Now, 1, 100, 1, 1, 0, 1, "Test", "Obs", 1,
+                 new List<CrearAsientoLineaDto>());
+ 
+             var result = await _servicio.CrearAsiento(dto);
+@@ -164,13 +170,92 @@ namespace fyd.backend.UnitTests.Aplicacion.Contabilidad.Servicios
+             Assert.AreEqual(AsientoCodigoError.CotizacionInvalida, result.Error!.Codigo);
+         }
+ 
++        [TestMethod]
++        public async Task CrearAsiento_PuntoVentaNoCoincide_RetornaPuntoVentaInvalido()
++        {
++            _repositorio.Setup(r => r.ObtenerPuntoVentaNumeracion(1)).ReturnsAsync(5);
++            var dto = new CrearAsientoDto(
++                DateTime.Now, DateTime.Now, 1, 100, 1, 1, 1, 1, "Test", "Obs", 9,
++                new List<CrearAsientoLineaDto>());
++
++            var result = await _servicio.CrearAsiento(dto);
++
++            Assert.IsFalse(result.Exitoso);
++            Assert.AreEqual(AsientoCodigoError.PuntoVentaInvalido, result.Error!.Codigo);
++            _repositorio.Verify(r => r.CrearPorComprobante(
++                It.IsAny<Comprobante>(),
++                It.IsAny<IReadOnlyCollection<Asiento>>()), Times.Never);
++        }
++
++        [TestMethod]
++        public async Task CrearAsiento_PuntoVentaYNumeroNoInformados_DelegaLaNumeracionAutomaticaAlRepositorio()
++        {
++            Comprobante? comprobantePersistido = null;
++            _repositorio.Setup(r => r.CrearPorComprobante(
++                    It.IsAny<Comprobante>(),
++                    It.IsAny<IReadOnlyCollection<Asiento>>()))
++                .Callback<Comprobante, IReadOnlyCollection<Asiento>>((comprobante, _) =>
++                    comprobantePersistido = comprobante)
++                .ReturnsAsync(322);
++            var dto = new CrearAsientoDto(
++                DateTime.Today, DateTime.Today, 1, null, 1, 1, 1, 1, "Alta", "Obs", null,
++                new List<CrearAsientoLineaDto>
++                {
++                    new(10, 1, 100, "Debe", null, null, null),
++                    new(20, -1, 100, "Haber", null, null, null)
++                });
++
++            var result = await _servicio.CrearAsiento(dto);
++
++            Assert.IsTrue(result.Exitoso);
++            Assert.AreEqual(322, result.Valor);
++            Assert.IsNotNull(comprobantePersistido);
++            Assert.IsNull(comprobantePersistido.Numero);
++            _repositorio.Verify(r => r.ObtenerPuntoVentaNumeracion(It.IsAny<int>()), Times.Never);
++        }
++
++        [TestMethod]
++        public async Task CrearAsiento_Balanceado_PersisteCabeceraYDetalleComoAgregado()
++        {
++            IReadOnlyCollection<Asiento>? lineasPersistidas = null;
++            Comprobante? comprobantePersistido = null;
++            _repositorio.Setup(r => r.CrearPorComprobante(
++                    It.IsAny<Comprobante>(),
++                    It.IsAny<IReadOnlyCollection<Asiento>>()))
++                .Callback<Comprobante, IReadOnlyCollection<Asiento>>((comprobante, lineas) =>
++                {
++                    comprobantePersistido = comprobante;
++                    lineasPersistidas = lineas;
++                })
++                .ReturnsAsync(321);
++            var dto = new CrearAsientoDto(
++                DateTime.Today, DateTime.Today, 1, 100, 1, 1, 2, 1000, "Alta", "Obs", 1,
++                new List<CrearAsientoLineaDto>
++                {
++                    new(10, 1, 100, "Debe", null, null, null),
++                    new(20, -1, 100, "Haber", null, null, null)
++                });
++
++            var result = await _servicio.CrearAsiento(dto);
++
++            Assert.IsTrue(result.Exitoso);
++            Assert.AreEqual(321, result.Valor);
++            Assert.IsNotNull(comprobantePersistido);
++            Assert.AreEqual(100m, comprobantePersistido.ImpTotal);
++            Assert.IsNotNull(lineasPersistidas);
++            Assert.HasCount(2, lineasPersistidas);
++            Assert.AreEqual(50m, lineasPersistidas.First().ImpLocal);
++            Assert.AreEqual(0.1m, lineasPersistidas.First().ImpReferencia);
++            _unidadDeTrabajo.Verify(u => u.GuardarCambios(), Times.Never);
++        }
++
+         [TestMethod]
+         public async Task CrearAsiento_PeriodoCerrado_RetornaFalla()
+         {
+             _repositorio.Setup(r => r.PeriodoEstaCerrado(It.IsAny<DateTime>())).ReturnsAsync(true);
+ 
+             var dto = new CrearAsientoDto(
+-                DateTime.Now, DateTime.Now, 1, 100, 1, 1, 1, 1, "Test", "Obs",
++                DateTime.Now, DateTime.Now, 1, 100, 1, 1, 1, 1, "Test", "Obs", 1,
+                 new List<CrearAsientoLineaDto>());
+ 
+             var result = await _servicio.CrearAsiento(dto);
+@@ -184,7 +269,7 @@ namespace fyd.backend.UnitTests.Aplicacion.Contabilidad.Servicios
+         public async Task CrearAsiento_NoBalancea_RetornaFalla()
+         {
+             var dto = new CrearAsientoDto(
+-                DateTime.Now, DateTime.Now, 1, 100, 1, 1, 1, 1, "Test", "Obs",
++                DateTime.Now, DateTime.Now, 1, 100, 1, 1, 1, 1, "Test", "Obs", 1,
+                 new List<CrearAsientoLineaDto>
+                 {
+                     new CrearAsientoLineaDto(10, 1, 100, "D", null, null, null),
+@@ -203,7 +288,7 @@ namespace fyd.backend.UnitTests.Aplicacion.Contabilidad.Servicios
+             _repositorio.Setup(r => r.CuentaTieneSubcuentaCaja(10)).ReturnsAsync(true);
+ 
+             var dto = new CrearAsientoDto(
+-                DateTime.Now, DateTime.Now, 1, 100, 1, 1, 1, 1, "Test", "Obs",
++                DateTime.Now, DateTime.Now, 1, 100, 1, 1, 1, 1, "Test", "Obs", 1,
+                 new List<CrearAsientoLineaDto>
+                 {
+                     new CrearAsientoLineaDto(10, 1, 100, "D", null, null, null),
+@@ -318,8 +403,87 @@ namespace fyd.backend.UnitTests.Aplicacion.Contabilidad.Servicios
+         }
+ 
+         [TestMethod]
+-        public async Task ActualizarAsiento_RenglonFaltante_RechazaSinPersistir()
++        public async Task ActualizarAsiento_RenglonesNuevos_LosEnviaSinIdAlRepositorio()
++        {
++            var dto = new ActualizarAsientoDto(
++                1, DateTime.Today, DateTime.Today, 1, 100, 1, 1, 1m, 1000m,
++                "Test", "Memo",
++                new List<ActualizarAsientoLineaDto>
++                {
++                    new(1, 10, 1, 100, "Debe existente", null, null, null),
++                    new(2, 20, -1, 100, "Haber existente", null, null, null),
++                    new(null, 30, 1, 25, "Debe nuevo", null, null, null),
++                    new(null, 40, -1, 25, "Haber nuevo", null, null, null)
++                });
++            IReadOnlyCollection<Asiento>? lineasPersistidas = null;
++            _repositorio.Setup(r => r.ActualizarPorComprobanteId(
++                    It.IsAny<Comprobante>(),
++                    It.IsAny<IReadOnlyCollection<Asiento>>()))
++                .Callback<Comprobante, IReadOnlyCollection<Asiento>>((_, lineas) => lineasPersistidas = lineas)
++                .ReturnsAsync(true);
++
++            var resultado = await _servicio.ActualizarAsiento(dto);
++
++            Assert.IsTrue(resultado.Exitoso);
++            Assert.IsNotNull(lineasPersistidas);
++            CollectionAssert.AreEquivalent(
++                new[] { 1, 2 },
++                lineasPersistidas.Where(linea => linea.Id > 0).Select(linea => linea.Id).ToArray());
++            Assert.AreEqual(2, lineasPersistidas.Count(linea => linea.Id == 0));
++            _unidadDeTrabajo.Verify(u => u.GuardarCambios(), Times.Once);
++        }
++
++        [TestMethod]
++        public async Task ActualizarAsiento_RenglonesEliminados_LosOmiteDelRepositorio()
+         {
++            _repositorio.Setup(r => r.ObtenerPorComprobanteId(1)).ReturnsAsync(new AsientoConsulta
++            {
++                Id = 1,
++                Fecha = DateTime.Today,
++                FechaEmision = DateTime.Today,
++                NumeraTipoId = 1,
++                Numero = 100,
++                EmpresaId = 1,
++                MonedaId = 1,
++                CotizacionLocal = 1,
++                CotizacionReferencia = 1,
++                Lineas = new List<AsientoLineaConsulta>
++                {
++                    new() { Id = 1, CuentaId = 10, Tipo = 1, Importe = 100, ImpLocal = 100, ImpReferencia = 100 },
++                    new() { Id = 2, CuentaId = 20, Tipo = -1, Importe = 100, ImpLocal = 100, ImpReferencia = 100 },
++                    new() { Id = 3, CuentaId = 30, Tipo = 1, Importe = 25, ImpLocal = 25, ImpReferencia = 25 },
++                    new() { Id = 4, CuentaId = 40, Tipo = -1, Importe = 25, ImpLocal = 25, ImpReferencia = 25 }
++                }
++            });
++            var dto = new ActualizarAsientoDto(
++                1, DateTime.Today, DateTime.Today, 1, 100, 1, 1, 1m, 1m,
++                "Test", "Obs",
++                new List<ActualizarAsientoLineaDto>
++                {
++                    new(1, 10, 1, 100, "D", null, null, null),
++                    new(2, 20, -1, 100, "H", null, null, null)
++                });
++            IReadOnlyCollection<Asiento>? lineasPersistidas = null;
++            _repositorio.Setup(r => r.ActualizarPorComprobanteId(
++                    It.IsAny<Comprobante>(),
++                    It.IsAny<IReadOnlyCollection<Asiento>>()))
++                .Callback<Comprobante, IReadOnlyCollection<Asiento>>((_, lineas) => lineasPersistidas = lineas)
++                .ReturnsAsync(true);
++
++            var resultado = await _servicio.ActualizarAsiento(dto);
++
++            Assert.IsTrue(resultado.Exitoso);
++            Assert.IsNotNull(lineasPersistidas);
++            CollectionAssert.AreEquivalent(new[] { 1, 2 }, lineasPersistidas.Select(linea => linea.Id).ToArray());
++            _repositorio.Verify(r => r.TieneReferenciasExternas(3), Times.Once);
++            _repositorio.Verify(r => r.TieneReferenciasExternas(4), Times.Once);
++            _unidadDeTrabajo.Verify(u => u.GuardarCambios(), Times.Once);
++        }
++
++        [TestMethod]
++        public async Task ActualizarAsiento_RenglonEliminadoReferenciado_RechazaSinPersistir()
++        {
++            _repositorio.Setup(r => r.TieneReferenciasExternas(2)).ReturnsAsync(true);
+             var dto = new ActualizarAsientoDto(
+                 1, DateTime.Today, DateTime.Today, 1, 100, 1, 1, 1m, 1m,
+                 "Test", "Obs",
+@@ -331,7 +495,10 @@ namespace fyd.backend.UnitTests.Aplicacion.Contabilidad.Servicios
+             var resultado = await _servicio.ActualizarAsiento(dto);
+ 
+             Assert.IsFalse(resultado.Exitoso);
+-            Assert.AreEqual(AsientoCodigoError.RenglonesNoCoinciden, resultado.Error!.Codigo);
++            Assert.AreEqual(AsientoCodigoError.RenglonReferenciado, resultado.Error!.Codigo);
++            _repositorio.Verify(r => r.ActualizarPorComprobanteId(
++                It.IsAny<Comprobante>(),
++                It.IsAny<IReadOnlyCollection<Asiento>>()), Times.Never);
+             _unidadDeTrabajo.Verify(u => u.GuardarCambios(), Times.Never);
+         }
+ 
+@@ -344,6 +511,50 @@ namespace fyd.backend.UnitTests.Aplicacion.Contabilidad.Servicios
+ 
+             Assert.IsFalse(result.Exitoso);
+             Assert.AreEqual(AsientoCodigoError.PeriodoRenumerado, result.Error!.Codigo);
++            _repositorio.Verify(r => r.EliminarPorComprobanteId(It.IsAny<int>()), Times.Never);
++            _unidadDeTrabajo.Verify(u => u.GuardarCambios(), Times.Never);
++        }
++
++        [TestMethod]
++        public async Task EliminarAsiento_ComprobanteCompleto_ValidaRenglonesYGuarda()
++        {
++            _repositorio.Setup(r => r.EliminarPorComprobanteId(1)).ReturnsAsync(true);
++
++            var result = await _servicio.EliminarAsiento(1);
++
++            Assert.IsTrue(result.Exitoso);
++            _repositorio.Verify(r => r.ObtenerPorComprobanteId(1), Times.Once);
++            _repositorio.Verify(r => r.TieneReferenciasExternas(1), Times.Once);
++            _repositorio.Verify(r => r.TieneReferenciasExternas(2), Times.Once);
++            _repositorio.Verify(r => r.EliminarPorComprobanteId(1), Times.Once);
++            _unidadDeTrabajo.Verify(u => u.GuardarCambios(), Times.Once);
++            _repositorio.Verify(r => r.ObtenerPorId(It.IsAny<int>()), Times.Never);
++        }
++
++        [TestMethod]
++        public async Task EliminarAsiento_RenglonReferenciado_RechazaSinEliminar()
++        {
++            _repositorio.Setup(r => r.TieneReferenciasExternas(2)).ReturnsAsync(true);
++
++            var result = await _servicio.EliminarAsiento(1);
++
++            Assert.IsFalse(result.Exitoso);
++            Assert.AreEqual(AsientoCodigoError.RenglonReferenciado, result.Error!.Codigo);
++            _repositorio.Verify(r => r.EliminarPorComprobanteId(It.IsAny<int>()), Times.Never);
++            _unidadDeTrabajo.Verify(u => u.GuardarCambios(), Times.Never);
++        }
++
++        [TestMethod]
++        public async Task EliminarAsiento_ComprobanteInexistente_RetornaNoEncontrado()
++        {
++            _repositorio.Setup(r => r.ObtenerPorComprobanteId(999)).ReturnsAsync((AsientoConsulta?)null);
++
++            var result = await _servicio.EliminarAsiento(999);
++
++            Assert.IsFalse(result.Exitoso);
++            Assert.AreEqual(AsientoCodigoError.NoEncontrado, result.Error!.Codigo);
++            _repositorio.Verify(r => r.EliminarPorComprobanteId(It.IsAny<int>()), Times.Never);
++            _unidadDeTrabajo.Verify(u => u.GuardarCambios(), Times.Never);
+         }
+     }
+ }

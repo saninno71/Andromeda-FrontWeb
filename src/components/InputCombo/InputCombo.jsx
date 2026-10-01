@@ -10,7 +10,8 @@ function InputCombo({
     onChange,
     onEnter,
     icono,
-    tabIndex
+    tabIndex,
+    disabled = false
 })
 
 {
@@ -20,6 +21,8 @@ function InputCombo({
     const controlRef = useRef(null);
 
     function abrirCombo() {
+
+        if (disabled) return;
 
         setIndiceActivo(0);
         setAbierto(true);
@@ -34,6 +37,8 @@ function InputCombo({
 
     function alternarCombo() {
 
+        if (disabled) return;
+
         if (abierto) {
             cerrarCombo();
             return;
@@ -44,6 +49,8 @@ function InputCombo({
     }
 
     function seleccionarItem(item) {
+
+        if (disabled) return;
 
         onChange(item);
         cerrarCombo();
@@ -89,10 +96,13 @@ function InputCombo({
 
         <div
             ref={controlRef}
-            className="inputCombo"
-            tabIndex={tabIndex}
+            className={`inputCombo ${disabled ? "inputComboDeshabilitado" : ""}`}
+            tabIndex={disabled ? -1 : tabIndex}
+            aria-disabled={disabled}
             onClick={alternarCombo}
             onKeyDown={(evento) => {
+
+                if (disabled) return;
 
                 if (evento.key === "ArrowDown") {
                     evento.preventDefault();
@@ -176,7 +186,7 @@ function InputCombo({
 
         </div>
 
-        {abierto && (
+        {abierto && !disabled && (
 
             <div className="inputComboLista"
                 onMouseLeave={() => setAbierto(false)}>

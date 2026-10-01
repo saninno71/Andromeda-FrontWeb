@@ -107,6 +107,7 @@ export function useGridVirtualizacion({
     return {
         filasVirtuales,
         altoTotal,
+        altoFilaMedido:altoFila,
         offsetY,
         altoInferior,
         actualizarScrollTop

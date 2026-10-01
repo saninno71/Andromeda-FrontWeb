@@ -2,7 +2,7 @@ import InputCombo from "../InputCombo/InputCombo";
 import useEmpresa from "./useEmpresa.js";
 import iconFlechaC from "../../assets/iconFlechaC.png";
 
-function ComboEmpresas({ titulo = "Empresa", valor, onChange, onEnter, tabIndex }) {
+function ComboEmpresas({ titulo = "Empresa", valor, onChange, onEnter, tabIndex, disabled = false }) {
     const { empresas, texto, seleccionarEmpresa } = useEmpresa({ valor, onChange });
 
     return (
@@ -16,6 +16,7 @@ function ComboEmpresas({ titulo = "Empresa", valor, onChange, onEnter, tabIndex 
             onEnter={onEnter}
             icono={<img src={iconFlechaC} />}
             tabIndex={tabIndex}
+            disabled={disabled}
         />
     );
 }

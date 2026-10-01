@@ -6,12 +6,16 @@ import {
     obtenerTextoCuenta,
     puedeBuscarCuenta
 } from "./cuenta.funcional";
+import {
+    crearBorradorDesdeEscritura,
+    crearBorradorDesdeValor,
+    esBusquedaIniciadaPorUsuario
+} from "../EntidadBusqueda/busquedaEntidad.funcional.js";
 
 export default function useCuenta({ valor, empresaID, onChange }) {
-    const [borrador, setBorrador] = useState(() => ({
-        valor,
-        texto: formatearCuenta(valor)
-    }));
+    const [borrador, setBorrador] = useState(() =>
+        crearBorradorDesdeValor(valor, formatearCuenta)
+    );
     const texto = obtenerTextoCuenta(valor, borrador);
     const [cuentas, setCuentas] = useState([]);
     const [buscando, setBuscando] = useState(false);
@@ -20,16 +24,16 @@ export default function useCuenta({ valor, empresaID, onChange }) {
     // Registrar el cambio externo evita reutilizar un borrador antiguo
     // si posteriormente se vuelve a seleccionar o limpiar la misma cuenta.
     if (!Object.is(valor, borrador.valor)) {
-        setBorrador({ valor, texto: formatearCuenta(valor) });
+        setBorrador(crearBorradorDesdeValor(valor, formatearCuenta));
     }
 
     useEffect(() => {
         let cancelado = false;
         const controller = new AbortController();
-        setCuentas([]);
-        setError(null);
-        setBuscando(puedeBuscarCuenta(texto, valor));
-        if (!puedeBuscarCuenta(texto, valor)) return;
+        const buscarPorEscritura =
+            esBusquedaIniciadaPorUsuario(borrador) &&
+            puedeBuscarCuenta(texto, valor);
+        if (!buscarPorEscritura) return;
 
         const timeout = setTimeout(async () => {
             try {
@@ -47,22 +51,32 @@ export default function useCuenta({ valor, empresaID, onChange }) {
             controller.abort();
             clearTimeout(timeout);
         };
-    }, [texto, empresaID, valor]);
+    }, [texto, empresaID, valor, borrador]);
 
     function cambiarTexto(nuevoTexto) {
-        setBorrador({ valor: null, texto: nuevoTexto });
+        setBorrador(crearBorradorDesdeEscritura(nuevoTexto));
         setCuentas([]);
+        setError(null);
+        setBuscando(nuevoTexto.trim().length >= 2);
         onChange(null);
     }
 
     function seleccionarCuenta(cuenta) {
-        setBorrador({ valor: cuenta, texto: formatearCuenta(cuenta) });
+        setBorrador(crearBorradorDesdeValor(cuenta, formatearCuenta));
         setCuentas([]);
+        setError(null);
+        setBuscando(false);
         onChange(cuenta);
     }
 
     const mensajeVacio = valor || texto.trim().length < 2
         ? "Escribí al menos 2 caracteres para buscar"
         : error || (buscando ? "Buscando…" : "Sin resultados");
-    return { texto, cuentas, cambiarTexto, seleccionarCuenta, mensajeVacio };
+    return {
+        texto,
+        cuentas:esBusquedaIniciadaPorUsuario(borrador) ? cuentas : [],
+        cambiarTexto,
+        seleccionarCuenta,
+        mensajeVacio
+    };
 }

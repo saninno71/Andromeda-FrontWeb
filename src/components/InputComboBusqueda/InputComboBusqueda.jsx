@@ -13,15 +13,18 @@ function InputComboBusqueda({
     onChange,
     onSeleccionar,
     onEnter,
-    tabIndex
+    tabIndex,
+    disabled = false,
+    formatearItem,
+    seleccionarAlEnfocar = false
 }) {
 
     const [tieneFoco,setTieneFoco] = useState(false);
     const [indiceActivo,setIndiceActivo] = useState(0);
-    const mostrarLista = tieneFoco;
+    const mostrarLista = tieneFoco && !disabled;
 
     function obtenerTextoItem(item) {
-        return `${item[campoCodigo]} - ${item[campoDescripcion]}`;
+        return formatearItem?.(item) ?? `${item[campoCodigo]} - ${item[campoDescripcion]}`;
     }
 
     function seleccionarItem(item) {
@@ -73,7 +76,7 @@ function InputComboBusqueda({
 
     return (
 
-        <div className="inputComboBusqueda">
+        <div className={`inputComboBusqueda ${disabled ? "inputComboBusquedaDeshabilitado" : ""}`}>
 
             <div
                 className={`inputComboBusquedaTitulo ${
@@ -90,13 +93,16 @@ function InputComboBusqueda({
                 <input
                     className="inputComboBusquedaInput"
                     value={valor}
+                    disabled={disabled}
                     onChange={(e) => {
                         setIndiceActivo(0);
                         onChange(e.target.value);
                     }}
-                    onFocus={() => {
+                    onFocus={(evento) => {
+                        if (disabled) return;
                         setIndiceActivo(0);
                         setTieneFoco(true);
+                        if (seleccionarAlEnfocar) evento.currentTarget.select();
                     }}
                     onBlur={() => setTimeout(() => setTieneFoco(false), 150)}
                     onKeyDown={manejarTecla}

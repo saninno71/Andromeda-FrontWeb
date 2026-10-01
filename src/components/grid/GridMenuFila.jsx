@@ -5,6 +5,7 @@ import icon4 from "../../assets/icon4G.png";
 import icon5 from "../../assets/icon5G.png";
 import icon6 from "../../assets/icon6G.png";
 import { useLayoutEffect,useRef,useState } from "react";
+import { ACCIONES_MENU_FILA_DEFAULT } from "./gridMenuAcciones";
 
 const estiloIcono = {
     width:"13px",
@@ -22,7 +23,9 @@ function GridMenuFila({
     scrollLeft = 0,
     anchoContenido = 0,
     anchoContenedor = 0,
+    acciones = ACCIONES_MENU_FILA_DEFAULT,
     onEditarFila,
+    onVerFila,
     onEliminarFila
 }) {
 
@@ -30,6 +33,7 @@ function GridMenuFila({
     const refIconos = useRef(null);
     const [anchoMenu,setAnchoMenu] = useState(0);
     const [anchoVisible,setAnchoVisible] = useState(anchoContenedor);
+    const accionesVisibles = new Set(acciones);
 
     useLayoutEffect(() => {
 
@@ -100,28 +104,36 @@ function GridMenuFila({
             <div className="menuFilaFondo"></div>
 
             <div className="menuFilaIconos" ref={refIconos}>
-                <img
+                {accionesVisibles.has("editar") && <img
                     src={iconEditar}
-                    alt=""
+                    alt="Editar"
                     style={estiloIcono}
                     onClick={(evento) => {
                         evento.stopPropagation();
                         onEditarFila?.();
                     }}
-                />
-                <img
+                />}
+                {accionesVisibles.has("eliminar") && <img
                     src={iconDel}
-                    alt=""
+                    alt="Eliminar"
                     style={estiloIcono}
                     onClick={(evento) => {
                         evento.stopPropagation();
                         onEliminarFila?.();
                     }}
-                />
-                <img src={iconVer} alt="" style={estiloIcono} />
-                <img src={icon4} alt="" style={estiloIcono} />
-                <img src={icon5} alt="" style={estiloIcono} />
-                <img src={icon6} alt="" style={estiloIcono} />
+                />}
+                {accionesVisibles.has("ver") && <img
+                    src={iconVer}
+                    alt="Ver"
+                    style={estiloIcono}
+                    onClick={(evento) => {
+                        evento.stopPropagation();
+                        onVerFila?.();
+                    }}
+                />}
+                {accionesVisibles.has("accion4") && <img src={icon4} alt="Acción 4" style={estiloIcono} />}
+                {accionesVisibles.has("accion5") && <img src={icon5} alt="Acción 5" style={estiloIcono} />}
+                {accionesVisibles.has("accion6") && <img src={icon6} alt="Acción 6" style={estiloIcono} />}
             </div>
         </div>
     );

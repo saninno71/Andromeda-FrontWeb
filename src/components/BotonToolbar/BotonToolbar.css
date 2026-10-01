@@ -71,3 +71,24 @@
 
     background:rgba(255,255,255,0.2);
 }
+
+.botonToolbar:disabled {
+    border-color:#CCCCCC;
+    background:#F5F5F5;
+    color:#888888;
+    cursor:default;
+}
+
+.botonToolbar:disabled:hover {
+    background:#F5F5F5;
+}
+
+.botonToolbar:disabled .botonToolbarTexto {
+    color:#888888;
+}
+
+.botonToolbar:disabled .botonToolbarIcono {
+    color:#A0A0A0;
+    filter:grayscale(1);
+    opacity:.45;
+}

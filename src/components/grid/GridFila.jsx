@@ -3,6 +3,8 @@ import { memo,useEffect,useLayoutEffect,useRef,useState } from "react";
 import { createPortal } from "react-dom";
 import { obtenerClaseTextoColumna } from "./gridEstilos";
 import { formatearValor } from "../updFormatos";
+import GridEditorDecimal from "./GridEditorDecimal.jsx";
+import { esColumnaCalculada, obtenerValorColumna } from "./gridValores.js";
 
 function obtenerValorEditor(fila, columna) {
 
@@ -211,9 +213,9 @@ function GridFila({
     mostrarCheck,
     anchoColumnaCheck,
     columnas,
+    contextoCalculos,
     checked,
     cambiarCheckFila,
-    seleccionarFila,
     refPrimeraCeldaDatos,
     estiloColumna,
     estiloEspacioFinal,
@@ -221,20 +223,39 @@ function GridFila({
     celdasModificadas = null,
     filaEditando = false,
     filaDraft = null,
+    campoFocoEdicion = null,
     onDraftPatch,
     onDraftChange,
     onConfirmarEdicionFila,
     onCancelarEdicionFila,
-    onClickSimpleFila
+    onClickSimpleFila,
+    onDobleClickFila
 }) {
 
     const [comboAbiertoCampo,setComboAbiertoCampo] = useState(null);
+    const refFila = useRef(null);
+
+    useLayoutEffect(() => {
+        if (!filaEditando || !campoFocoEdicion || !refFila.current) {
+            return;
+        }
+
+        const celda = [...refFila.current.querySelectorAll("[data-grid-campo]")]
+            .find(elemento => elemento.dataset.gridCampo === campoFocoEdicion);
+        const editor = celda?.querySelector(
+            'input:not([type="checkbox"]), textarea, [contenteditable="true"], [tabindex]'
+        );
+
+        editor?.focus?.();
+        editor?.select?.();
+    }, [filaEditando,campoFocoEdicion]);
 
     function puedeEditarColumna(columna) {
 
         return (
             editable &&
             filaEditando &&
+            !esColumnaCalculada(columna) &&
             columna.editable === true &&
             typeof onDraftChange === "function"
         );
@@ -320,12 +341,22 @@ function GridFila({
             );
         }
 
+        if (columna.editor === "decimal" || columna.formato === "decimal") {
+            return (
+                <GridEditorDecimal
+                    valor={valorEditando}
+                    mascara={columna.mascara}
+                    onChange={valor => onDraftChange(columna.campo, valor)}
+                    onKeyDown={manejarTeclaEditor}
+                />
+            );
+        }
+
         const tipoInput =
             columna.editor === "fecha"
                 ? "date"
                 : (
-                    columna.editor === "numero" ||
-                    columna.editor === "decimal"
+                    columna.editor === "numero"
                         ? "number"
                         : "text"
                 );
@@ -357,6 +388,7 @@ function GridFila({
 
     return (
         <tr
+            ref={refFila}
             className={`
                 ${claseFila}
                 ${claseMenuFila}
@@ -366,7 +398,9 @@ function GridFila({
             data-key={keyFila}
             onDoubleClick={(e) => {
                 if (!filaEditando) {
-                    seleccionarFila(fila,e);
+                    e.preventDefault();
+                    const campo = e.target.closest?.("[data-grid-campo]")?.dataset.gridCampo ?? null;
+                    onDobleClickFila?.(fila,keyFila,campo);
                 }
             }}
         >
@@ -389,6 +423,7 @@ function GridFila({
                             e.stopPropagation();
                             cambiarCheckFila(keyFila,e);
                         }}
+                        onDoubleClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => {
                             if (e.key === " ") {
                                 e.preventDefault();
@@ -418,6 +453,7 @@ function GridFila({
                             key={columna.campo}
                             data-grid-row={indiceFila}
                             data-grid-col={indiceColumna}
+                            data-grid-campo={columna.campo}
                             ref={
                                 indiceFila === 0 &&
                                 indiceColumna === 0
@@ -437,13 +473,13 @@ function GridFila({
                             className={`
                                 ${obtenerClaseTextoColumna(columna)}
                                 grillaCeldaDatos
-                                ${editable && columna.editable === true ? "grillaCeldaEditable" : ""}
+                                ${editable && columna.editable === true && !esColumnaCalculada(columna) ? "grillaCeldaEditable" : ""}
                                 ${editando ? "grillaCeldaEditando" : ""}
                                 ${editandoCombo ? "grillaCeldaEditandoCombo" : ""}
                                 ${celdaModificada ? "grillaCeldaModificada" : ""}
                             `}
                             onClick={(e) => {
-                                onClickSimpleFila?.(fila,keyFila);
+                                onClickSimpleFila?.(fila,keyFila,e.currentTarget.closest("tr"));
                                 e.currentTarget.focus();
                             }}
                         >
@@ -453,7 +489,13 @@ function GridFila({
                                     : (
                                         <span className="contenidoCelda">
                                             {formatearValor(
-                                                fila[columna.campo],
+                                                obtenerValorColumna(
+                                                    filaEditando && esColumnaCalculada(columna)
+                                                        ? filaDraft
+                                                        : fila,
+                                                    columna,
+                                                    contextoCalculos
+                                                ),
                                                 columna.formato,
                                                 columna.mascara
                                             )}

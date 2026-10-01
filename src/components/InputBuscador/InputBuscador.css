@@ -13,7 +13,7 @@
 
     border:1px solid #00AEEF;
 
-    border-radius:4px;
+    border-radius:5px;
 
     background:white;
 }
@@ -74,4 +74,26 @@
 
     align-items:center;
     justify-content:center;
+}
+
+.inputBuscadorDeshabilitado {
+    border-color:#CCCCCC;
+    background:#F5F5F5;
+}
+
+.inputBuscadorDeshabilitado .inputBuscadorTitulo,
+.inputBuscadorDeshabilitado .inputBuscadorInput {
+    color:#888888;
+}
+
+.inputBuscadorDeshabilitado .inputBuscadorInput:disabled {
+    cursor:default;
+    opacity:1;
+}
+
+.inputBuscadorDeshabilitado .inputBuscadorIcono {
+    color:#A0A0A0;
+    filter:grayscale(1);
+    opacity:.45;
+    pointer-events:none;
 }
