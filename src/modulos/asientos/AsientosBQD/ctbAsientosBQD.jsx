@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ABMAsientos from "../AsientosABM/ABMAsientos.jsx";
 import { MODO_ABM } from "../../../components/ABM/modosABM.js";
-import { configurarEditoresAsientos } from "./asientosEditores";
+import { crearColumnasAsientosBQD } from "./asientosBQD.columnas.js";
 import "./ctbAsientosBQD.css";
 
 import { useAsientos } from "./useAsientos.js";
@@ -14,6 +14,11 @@ import ModalInfo from "../../../components/ModalInfo/ModalInfo";
 import ModalConfirmacion from "../../../components/ModalConfirmacion/ModalConfirmacion";
 import { eliminarAsientoPorId } from "../AsientosABM/abmAsientosService.js";
 import { cargarFilaAsientoPorId } from "./asientosService.js";
+import { prepararParametrosInformeAsientos } from "./asientos.informes.js";
+import {
+    abrirVentanaVistaPreviaBQD,
+    mostrarArchivoEnVistaPreviaBQD
+} from "../../../components/InformesBQD/vistaPreviaBQD.js";
 //componente filtros
 import FiltroAsientos from "./FiltroAsientos";
 
@@ -25,55 +30,15 @@ function CtbAsientosBQD({
 
 {
 
-    /*definicion de columnas */
-    const columnasVisibles = useMemo(() => configurarEditoresAsientos([
-    {campo: "comprobanteID", titulo: "ID", visible: true, formato: "entero", mascara: "", key: true, suma: false, ancho: 100, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "fecha", titulo: "Fecha", visible: true, formato: "fecha", mascara: "DD/MM/YYYY", key: false, suma: false, ancho: 110, align: "center", desdoblarTexto: false, ordenDefault: "1", direccionDefault: "desc"},
-    {campo: "numeraTipoID", titulo: "NumeraTipoID", visible: false, formato: "entero", mascara: "", key: false, suma: false, ancho: 100, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "numeraTipoSimbolo", titulo: "Tipo", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 60, align: "left", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "numero", titulo: "Numero", visible: true, formato: "entero", mascara: "", key: false, suma: false, ancho: 90, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "debeCuentaID", titulo: "CuentaDebeID", visible: false, formato: "entero", mascara: "", key: false, suma: false, ancho: 100, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "debeCuentaCodigo", titulo: "Cuenta debe", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 110, align: "left", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "debeCuentaNombre", titulo: "Cuenta debe nombre", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 160, align: "left", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "monedaCodigo", titulo: "Moneda", visible: true, formato: "texto", mascara: "", key: true, suma: false, ancho: 60, align: "left", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "debeImporte", titulo: "Debito", visible: true, formato: "decimal", mascara: "0.0,00", key: false, suma: true, ancho: 150, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "debeImpLocal", titulo: "Debito en ARS", visible: true, formato: "decimal", mascara: "0.0,00", key: false, suma: true, ancho: 150, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "debeImpReferencia", titulo: "Debito en U$S", visible: true, formato: "decimal", mascara: "0.0,00", key: false, suma: true, ancho: 140, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "debeClienteID", titulo: "ClienteID", visible: false, formato: "entero", mascara: "", key: false, suma: false, ancho: 100, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "debeClienteCodigo", titulo: "Cliente", visible: true, formato: "entero", mascara: "", key: false, suma: false, ancho: 110, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "debeClienteNombre", titulo: "Cliente nombre", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 160, align: "left", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "debeProveedorID", titulo: "ProveedorID", visible: false, formato: "entero", mascara: "", key: false, suma: false, ancho: 100, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "debeProveedorCodigo", titulo: "Proveedor", visible: true, formato: "entero", mascara: "", key: false, suma: false, ancho: 110, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "debeProveedorNombre", titulo: "Proveedor nombre", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 160, align: "left", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "debeCajaID", titulo: "CajaID", visible: false, formato: "entero", mascara: "", key: false, suma: false, ancho: 100, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "debeCajaCodigo", titulo: "Caja", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 110, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "debeCajaNombre", titulo: "Caja nombre", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 160, align: "left", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "haberCuentaID", titulo: "CuentaHaberID", visible: false, formato: "entero", mascara: "", key: false, suma: false, ancho: 100, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "haberCuentaCodigo", titulo: "Cuenta haber", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 110, align: "left", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "haberCuentaNombre", titulo: "Cuenta haber nombre", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 160, align: "left", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "haberImporte", titulo: "Credito", visible: true, formato: "decimal", mascara: "0.0,00", key: false, suma: true, ancho: 150, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "haberImpLocal", titulo: "Credito en ARS", visible: true, formato: "decimal", mascara: "0.0,00", key: false, suma: true, ancho: 150, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "haberImpReferencia", titulo: "Credito en U$S", visible: true, formato: "decimal", mascara: "0.0,00", key: false, suma: true, ancho: 140, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "haberClienteID", titulo: "ClienteID", visible: false, formato: "entero", mascara: "", key: false, suma: false, ancho: 100, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "haberClienteCodigo", titulo: "Cliente", visible: true, formato: "entero", mascara: "", key: false, suma: false, ancho: 110, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "haberClienteNombre", titulo: "Cliente nombre", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 160, align: "left", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "haberProveedorID", titulo: "ProveedorID", visible: false, formato: "entero", mascara: "", key: false, suma: false, ancho: 100, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "haberProveedorCodigo", titulo: "Proveedor", visible: true, formato: "entero", mascara: "", key: false, suma: false, ancho: 110, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "haberProveedorNombre", titulo: "Proveedor nombre", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 160, align: "left", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "haberCajaID", titulo: "CajaID", visible: false, formato: "entero", mascara: "", key: false, suma: false, ancho: 100, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "haberCajaCodigo", titulo: "Caja", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 110, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "haberCajaNombre", titulo: "Caja nombre", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 160, align: "left", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "detalle", titulo: "Detalle", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 240, align: "left", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "empresaID", titulo: "EmpresaID", visible: false, formato: "entero", mascara: "", key: false, suma: false, ancho: 100, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "empresaCodigo", titulo: "Empresa", visible: true, formato: "entero", mascara: "", key: false, suma: false, ancho: 80, align: "right", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""},
-    {campo: "empresaNombre", titulo: "Empresa Nombre", visible: true, formato: "texto", mascara: "", key: false, suma: false, ancho: 220, align: "left", desdoblarTexto: false, ordenDefault: "", direccionDefault: ""}
-    ]), []);
+    const columnasVisibles = useMemo(() => crearColumnasAsientosBQD(), []);
 
     const { modelo, estado, filas:datosEditables, celdasModificadas } = useAsientos({ ejecutarConsultaInicial });
     const [asientoAbierto, setAsientoAbierto] = useState(null);
     const [filaAEliminar, setFilaAEliminar] = useState(null);
     const [eliminandoDesdeConsulta, setEliminandoDesdeConsulta] = useState(false);
     const [errorEliminacion, setErrorEliminacion] = useState("");
+    const [imprimiendo, setImprimiendo] = useState(false);
+    const [errorImpresion, setErrorImpresion] = useState("");
     const controlNavegacionGrid = useRef(null);
     const filaPendienteEnfoque = useRef(null);
     const [navegacionABM,setNavegacionABM] = useState({
@@ -246,6 +211,38 @@ function CtbAsientosBQD({
         }
     }
 
+    async function imprimirConsulta() {
+        if (imprimiendo) return;
+
+        let ventanaVistaPrevia = null;
+        setImprimiendo(true);
+        setErrorImpresion("");
+
+        try {
+            ventanaVistaPrevia = abrirVentanaVistaPreviaBQD();
+            const [parametrosInforme, generador] = await Promise.all([
+                prepararParametrosInformeAsientos(modelo, {
+                    layoutColumnas:gridPreferencias.layoutActualGrid
+                }),
+                import("../../../components/InformesBQD/generarInformeBQD.js")
+            ]);
+
+            const archivo = await generador.generarArchivoInformeBQD(parametrosInforme);
+            mostrarArchivoEnVistaPreviaBQD(ventanaVistaPrevia, archivo);
+        } catch (error) {
+            if (ventanaVistaPrevia && !ventanaVistaPrevia.closed) {
+                ventanaVistaPrevia.close();
+            }
+            setErrorImpresion(
+                error instanceof Error
+                    ? error.message
+                    : "No se pudo generar el informe."
+            );
+        } finally {
+            setImprimiendo(false);
+        }
+    }
+
   return (
 
     <div className="asientosContent">
@@ -257,6 +254,8 @@ function CtbAsientosBQD({
                 busquedaGrid={busquedaGrid}
                 onBusquedaGridChange={modelo.actualizarBusqueda}
                 onNuevo={abrirNuevoAsiento}
+                onImprimir={imprimirConsulta}
+                imprimiendo={imprimiendo}
             />
         </div>
 
@@ -305,6 +304,7 @@ function CtbAsientosBQD({
         )}
         {cargaAsientos.error && <p role="alert">{cargaAsientos.error}</p>}
         {errorEliminacion && <p role="alert">{errorEliminacion}</p>}
+        {errorImpresion && <p role="alert">{errorImpresion}</p>}
         <ModalConfirmacion
             abierto={Boolean(filaAEliminar)}
             titulo="Confirmar"

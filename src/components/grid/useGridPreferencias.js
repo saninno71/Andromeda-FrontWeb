@@ -228,6 +228,7 @@ export function useGridPreferencias({
         vistaGridActualID,
         tamanoFuenteGrid,
         layoutColumnasGrid,
+        layoutActualGrid,
         layoutVersion,
         ampliarTextoGrid,
         reducirTextoGrid,

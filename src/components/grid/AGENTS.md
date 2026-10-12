@@ -10,6 +10,7 @@ Antes de crear o configurar una grilla, leer `documentacion/componentes-reutiliz
 - `Grid.jsx` coordina la grilla; `GridFila.jsx` debe permanecer genérico.
 - Los editores de entidades se resuelven mediante `GridEditorCustom.jsx` y el registro único `gridEditores.js`.
 - No importar controles concretos nuevos en `GridFila.jsx`.
+- Cada módulo consumidor debe declarar sus columnas fuera del JSX, en un archivo puro `*.columnas.js`, para compartirlas con informes y ejecuciones sin renderización.
 - Toda columna custom debe declarar `editor` y un `editorConfig` válido.
 - `editorConfig.atributoVisible` debe ser explícito y estar incluido en `editorConfig.campos`.
 - `editorConfig.campos` vincula atributos de la entidad con campos de la fila, aunque las columnas no sean visibles ni consecutivas.

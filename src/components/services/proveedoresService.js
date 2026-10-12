@@ -1,4 +1,5 @@
 import {API_URL} from "../../config/AndromedaFrontConfig.js";
+import { crearErrorHttp } from "../../infraestructura/http/respuestaHttp.js";
 import { obtenerItemsOData } from "./odataResponse.js";
 
 const TOPE_PROVEEDORES_BUSQUEDA = 20;
@@ -45,6 +46,9 @@ export async function cargarProveedores(textoBusqueda, empresaID, signal) {
             }
         );
 
+        if (!response.ok) {
+            throw await crearErrorHttp(response, `No se pudieron cargar los proveedores (${response.status}).`);
+        }
         const data = await response.json();
         const proveedores = obtenerItemsOData(data);
 

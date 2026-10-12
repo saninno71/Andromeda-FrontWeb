@@ -2,7 +2,7 @@ import InputComboBusqueda from "../InputComboBusqueda/InputComboBusqueda";
 import useCuenta from "./useCuenta";
 import iconFlechaC from "../../assets/iconFlechaC.png";
 
-function ComboCuentas({ titulo = "Cuenta", valor, empresaID, onChange, onEnter, tabIndex }) {
+function ComboCuentas({ titulo = "Cuenta", valor, empresaID, onChange, onEnter, tabIndex, presentacion }) {
     const { texto, cuentas, cambiarTexto, seleccionarCuenta } =
         useCuenta({ valor, empresaID, onChange });
 
@@ -19,6 +19,7 @@ function ComboCuentas({ titulo = "Cuenta", valor, empresaID, onChange, onEnter, 
             onSeleccionar={seleccionarCuenta}
             onEnter={onEnter}
             tabIndex={tabIndex}
+            presentacion={presentacion}
         />
     );
 }

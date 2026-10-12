@@ -41,6 +41,15 @@ Cada objeto de `dataGrid` debe exponer los campos utilizados por la configuraci�
 
 ## Configuración de columnas
 
+La definición debe residir fuera del JSX en un módulo puro y dedicado, junto al módulo consumidor. La convención es `nombreBQD.columnas.js` o `nombreABM.columnas.js`. El archivo puede exportar una constante estable o una función creadora cuando cada instancia necesite objetos propios.
+
+```text
+PepeBQD/pepeBQD.columnas.js
+PepeABM/pepeABM.columnas.js
+```
+
+El JSX importa esa definición y la entrega a `Grid`. El mismo módulo puede ser consumido por una pantalla de configuración, un informe o una ejecución sin renderización. No debe importar React, hooks, DOM, estado ni servicios. Puede incluir funciones puras para columnas calculadas y metadatos declarativos de editores. Las preferencias del usuario se aplican después y no modifican la definición predeterminada.
+
 | Propiedad | Uso |
 |---|---|
 | `campo` | Nombre de la propiedad dentro de cada fila. Debe ser único. |
@@ -258,6 +267,7 @@ La demora visual puede configurarse según el contexto sin modificar el estado f
 
 ## Lista de verificación
 
+- La definición de columnas está en un archivo `*.columnas.js` independiente del JSX.
 - Cada columna tiene un `campo` único.
 - Existe al menos una clave estable.
 - Los valores de `visible`, `ancho`, `formato` y `align` son explícitos.

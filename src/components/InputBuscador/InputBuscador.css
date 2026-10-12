@@ -30,29 +30,20 @@
 }
 
 .inputBuscadorTextos {
-
     display:flex;
-
     flex-direction:column;
-
     gap:2px;
-
     flex:1;
 }
 
 .inputBuscadorTitulo {
-
     font-family:'Inter', sans-serif;
-
     font-size:11px;
-
     font-weight:600;
-
     color:#00AEEF;
 }
 
 .inputBuscadorInput {
-
     border:none;
 
     outline:none;

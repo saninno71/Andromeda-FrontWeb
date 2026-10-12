@@ -298,6 +298,7 @@ function MasFiltrosAsientos({
                         <div className="masFiltrosControl300">
                             <ComboCuentas
                                 titulo="Cuenta"
+                                presentacion="bqd-mas-filtros"
                                 valor={cuentaSeleccionada}
                                 empresaID={empresaSeleccionada?.empresaID}
                                 onChange={onCuentaChange}

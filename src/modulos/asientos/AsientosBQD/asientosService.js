@@ -3,6 +3,7 @@ import {
     obtenerItemsOData,
     obtenerTotalOData
 } from "../../../components/services/odataResponse.js";
+import { crearErrorHttp } from "../../../infraestructura/http/respuestaHttp.js";
 
 const TAMANO_PRIMERA_PAGINA_ASIENTOS = 100;
 const TAMANO_PAGINA_ASIENTOS = 1500;
@@ -107,7 +108,9 @@ export async function cargarAsientos(
         }
     );
 
-    if (!response.ok) throw new Error(`No se pudieron consultar los asientos (${response.status}).`);
+    if (!response.ok) {
+        throw await crearErrorHttp(response, `No se pudieron consultar los asientos (${response.status}).`);
+    }
     const data = await response.json();
 
     return {

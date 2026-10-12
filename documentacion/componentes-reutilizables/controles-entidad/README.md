@@ -64,7 +64,9 @@ La pantalla no debe llamar directamente al servicio para alimentar otra copia de
 
 `InputComboBusqueda` admite `formatearItem` y `seleccionarAlEnfocar` como opciones. Deben activarse desde el combo especializado únicamente cuando su contrato visual o de edición lo requiera; los demás combos conservan el formato y el foco predeterminados.
 
-Los controles personalizados normales de formulario y sus listas desplegables usan un radio de esquina de `5px`. Una variante embebida dentro de Grilla puede usar radio `0` para ajustarse exactamente a los límites de la celda; esta excepción no modifica la presentación normal del mismo control.
+`InputComboBusqueda` también admite las presentaciones explícitas `presentacion="bqd"` y `presentacion="bqd-mas-filtros"`. La pantalla de consulta debe declararla en el combo especializado, que la reenvía al componente base. Ambas aplican las reglas compartidas de `src/components/controles/styles/CombosBusquedaBQD.css` bajo la clase `comboBusquedaBQD`; la segunda suma el borde definido en `CombosBusquedaBQDMasFiltros.css`. Los controles que no declaran una presentación conservan el estilo existente durante la migración gradual. En esta primera etapa solamente `ComboCuentas` de Asientos BQD utiliza estas variantes.
+
+Los controles personalizados normales de formulario y sus listas desplegables usan un radio de esquina de `5px`. La presentación BQD migra gradualmente hacia su definición de `3px`. Una variante embebida dentro de Grilla puede usar radio `0` para ajustarse exactamente a los límites de la celda; estas excepciones no modifican la presentación normal del mismo control.
 
 El estado deshabilitado se aplica al control completo: borde y fondo pasan a su variante gris, label y valor usan el color de lectura deshabilitada y cualquier imagen, SVG o icono interno se convierte a escala de grises con opacidad reducida. Esta regla pertenece al componente base, por lo que Empresa, Moneda, Fecha y cualquier entidad futura no deben implementar el grisado por separado.
 

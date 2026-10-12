@@ -33,6 +33,7 @@ componentes-reutilizables/
 ├── grilla/
 ├── modal-header/
 ├── abm/
+├── respuesta-http/
 └── capa-funcional/
 ```
 
@@ -70,6 +71,8 @@ El índice deberá enlazar cada documento cuando sea creado.
 - [Guía de configuración de Grilla](grilla/GUIA_CONFIGURACION_GRILLA.md): referencia para desarrolladores, parametría, estado interno, vistas y diagnóstico.
 - [Header de ventanas modales](modal-header/README.md): cierre, título y contenido adicional reutilizable.
 - [Formularios ABM](abm/README.md): cinta de acciones, navegación reutilizable de registros, pie y composición de formularios ABM.
+- [Interpretación de respuestas HTTP](respuesta-http/README.md): lectura uniforme de Problem Details, validaciones ASP.NET y cuerpos de error.
+- [Informes de consultas BQD](informes-bqd/README.md): preparación tabular, distribución multilínea y generación de vista previa PDF.
 
 Pendiente de desarrollo documental:
 

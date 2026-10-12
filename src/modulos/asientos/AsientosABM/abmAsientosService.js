@@ -1,13 +1,5 @@
 import { API_URL } from "../../../config/AndromedaFrontConfig.js";
-
-async function obtenerMensajeError(response) {
-    try {
-        const error = await response.json();
-        return error.detail ?? error.mensaje ?? error.title;
-    } catch {
-        return null;
-    }
-}
+import { crearErrorHttp } from "../../../infraestructura/http/respuestaHttp.js";
 
 export async function cargarAsientoPorId(comprobanteID, { signal } = {}) {
     const response = await fetch(
@@ -16,8 +8,7 @@ export async function cargarAsientoPorId(comprobanteID, { signal } = {}) {
     );
 
     if (!response.ok) {
-        const detalle = await obtenerMensajeError(response);
-        throw new Error(detalle || `No se pudo cargar el asiento (${response.status}).`);
+        throw await crearErrorHttp(response, `No se pudo cargar el asiento (${response.status}).`);
     }
 
     return response.json();
@@ -38,8 +29,7 @@ export async function actualizarAsientoPorId(comprobanteID, datos, { signal } = 
     );
 
     if (!response.ok) {
-        const detalle = await obtenerMensajeError(response);
-        throw new Error(detalle || `No se pudo guardar el asiento (${response.status}).`);
+        throw await crearErrorHttp(response, `No se pudo guardar el asiento (${response.status}).`);
     }
 }
 
@@ -54,8 +44,7 @@ export async function eliminarAsientoPorId(comprobanteID, { signal } = {}) {
     );
 
     if (!response.ok) {
-        const detalle = await obtenerMensajeError(response);
-        throw new Error(detalle || `No se pudo eliminar el asiento (${response.status}).`);
+        throw await crearErrorHttp(response, `No se pudo eliminar el asiento (${response.status}).`);
     }
 }
 
@@ -74,8 +63,7 @@ export async function crearAsiento(datos, { signal } = {}) {
     );
 
     if (!response.ok) {
-        const detalle = await obtenerMensajeError(response);
-        throw new Error(detalle || `No se pudo crear el asiento (${response.status}).`);
+        throw await crearErrorHttp(response, `No se pudo crear el asiento (${response.status}).`);
     }
 
     return response.json();

@@ -21,6 +21,7 @@ Estas instrucciones se aplican a todo el proyecto.
 - Los iconos, leyendas, estados u otros agregados particulares del encabezado deben enviarse mediante `contenidoAdicional`.
 - Los formularios ABM deben reutilizar las estructuras comunes de encabezado, cinta de acciones y pie.
 - La capa funcional debe reflejar el estado vigente de controles, hijos y grillas cuando ese estado pueda ser solicitado por otras funciones.
+- Los services que consumen una API deben reutilizar `src/infraestructura/http/respuestaHttp.js` para interpretar errores HTTP. No duplicar lectores de Problem Details dentro de cada módulo. Los services de negocio permanecen junto a su módulo; solamente la infraestructura HTTP transversal se centraliza.
 
 ## Documentación obligatoria
 

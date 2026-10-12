@@ -1,4 +1,5 @@
 import {API_URL} from "../../config/AndromedaFrontConfig.js";
+import { crearErrorHttp } from "../../infraestructura/http/respuestaHttp.js";
 import { obtenerItemsOData } from "./odataResponse.js";
 
 const TOPE_CLIENTES_BUSQUEDA = 20;
@@ -40,6 +41,9 @@ export async function cargarClientes(textoBusqueda, signal) {
             }
         );
 
+        if (!response.ok) {
+            throw await crearErrorHttp(response, `No se pudieron cargar los clientes (${response.status}).`);
+        }
         const data = await response.json();
         const clientes = obtenerItemsOData(data);
 

@@ -53,7 +53,9 @@ function FiltroAsientos({
     gridPreferencias,
     busquedaGrid,
     onBusquedaGridChange,
-    onNuevo
+    onNuevo,
+    onImprimir,
+    imprimiendo = false
 }) 
 
 {
@@ -177,6 +179,9 @@ return (
             <BotonToolbar
                 texto=""
                 icono={<img src={btnPrint} />}
+                onClick={onImprimir}
+                disabled={imprimiendo}
+                title={imprimiendo ? "Generando informe" : "Imprimir consulta"}
                 tabIndex={tabIndexControles.imprimir}
             />
             <BotonToolbar
@@ -253,6 +258,7 @@ return (
 
             <ComboCuentas
                 titulo="Cuenta"
+                presentacion="bqd"
                 valor={cuentaSeleccionada}
                 empresaID={empresaSeleccionada?.empresaID}
                 onChange={cambiarCuentaSeleccionada}

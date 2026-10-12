@@ -4,7 +4,7 @@ La guía operativa para configurar nuevas grillas está en [GUIA_CONFIGURACION_G
 
 ## Responsabilidades
 
-Grilla administra visualización, columnas, selección, ordenamiento, resize, scroll, virtualización, edición y confirmación de filas. La pantalla consumidora define columnas, datos y persistencia.
+Grilla administra visualización, columnas, selección, ordenamiento, resize, scroll, virtualización, edición y confirmación de filas. El módulo consumidor define columnas, datos y persistencia. La definición declarativa de cada grilla reside en un archivo puro `*.columnas.js`, independiente del JSX, para que pueda reutilizarse en informes y ejecuciones sin renderización.
 
 El menú flotante comunica intención mediante callbacks genéricos: `onEditarRegistro` para edición y `onVerRegistro` para consulta. Grilla no define ni conserva el modo del ABM.
 

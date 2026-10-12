@@ -1,4 +1,5 @@
 import {API_URL} from "../../config/AndromedaFrontConfig.js";
+import { crearErrorHttp } from "../../infraestructura/http/respuestaHttp.js";
 import { obtenerItemsOData } from "./odataResponse.js";
 
 const TOPE_CUENTAS_BUSQUEDA = 20;
@@ -44,7 +45,9 @@ export async function cargarCuentas(textoBusqueda, empresaID, signal) {
             }
         );
 
-        if (!response.ok) throw new Error(`No se pudieron cargar las cuentas (${response.status}).`);
+        if (!response.ok) {
+            throw await crearErrorHttp(response, `No se pudieron cargar las cuentas (${response.status}).`);
+        }
         const data = await response.json();
         const cuentas = obtenerItemsOData(data);
 

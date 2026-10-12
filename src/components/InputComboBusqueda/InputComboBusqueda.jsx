@@ -1,4 +1,6 @@
 import "./InputComboBusqueda.css";
+import "../controles/styles/CombosBusquedaBQD.css";
+import "../controles/styles/CombosBusquedaBQDMasFiltros.css";
 
 import { useState } from "react";
 
@@ -16,12 +18,19 @@ function InputComboBusqueda({
     tabIndex,
     disabled = false,
     formatearItem,
-    seleccionarAlEnfocar = false
+    seleccionarAlEnfocar = false,
+    presentacion
 }) {
 
     const [tieneFoco,setTieneFoco] = useState(false);
     const [indiceActivo,setIndiceActivo] = useState(0);
     const mostrarLista = tieneFoco && !disabled;
+    const clasePresentacion =
+        presentacion === "bqd-mas-filtros"
+            ? "comboBusquedaBQD comboBusquedaBQDMasFiltros"
+            : presentacion === "bqd"
+                ? "comboBusquedaBQD"
+                : "";
 
     function obtenerTextoItem(item) {
         return formatearItem?.(item) ?? `${item[campoCodigo]} - ${item[campoDescripcion]}`;
@@ -76,7 +85,7 @@ function InputComboBusqueda({
 
     return (
 
-        <div className={`inputComboBusqueda ${disabled ? "inputComboBusquedaDeshabilitado" : ""}`}>
+        <div className={`inputComboBusqueda ${clasePresentacion} ${disabled ? "inputComboBusquedaDeshabilitado" : ""}`}>
 
             <div
                 className={`inputComboBusquedaTitulo ${
