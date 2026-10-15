@@ -11,18 +11,27 @@ test("prepara todos los parámetros del informe sin depender del JSX", async () 
             assert.deepEqual(opciones, { todosLosRegistros:false });
             return {
                 filas:[fila],
-                filtrosAplicados:{ detalle:"Prueba" },
+                filtrosAplicados:{ detalle:"Prueba", numeroDesde:10, numeroHasta:20 },
                 vista:{ busqueda:"123", orden:[{ campo:"numero", direccion:"asc" }] },
                 generadoEn:"2026-10-11T12:00:00.000Z"
             };
         }
     };
     const layoutColumnas = [{ campo:"numero", ancho:95 }];
+    const configuracionDetalle = {
+        layoutColumnas:[{ campo:"debe", ancho:80, visible:true }],
+        imprimirTitulos:false,
+        imprimirTotales:false
+    };
     const idsCargados = [];
 
     const resultado = await prepararParametrosInformeAsientos(modelo, {
         todosLosRegistros:false,
+        titulo:"Contabilidad - Asientos",
         layoutColumnas,
+        interlineado:"LightSalmon",
+        versionAplicacion:"1.0.0",
+        configuracionDetalle,
         cargarDetalleAsiento:async comprobanteID => {
             idsCargados.push(comprobanteID);
             return {
@@ -35,22 +44,59 @@ test("prepara todos los parámetros del informe sin depender del JSX", async () 
         }
     });
 
-    assert.equal(resultado.titulo, "Asientos");
+    assert.equal(resultado.titulo, "Contabilidad - Asientos");
     assert.equal(resultado.columnas.length, 40);
     assert.deepEqual(resultado.layoutColumnas, layoutColumnas);
+    assert.equal(resultado.interlineado, "LightSalmon");
+    assert.equal(resultado.versionAplicacion, "1.0.0");
     assert.deepEqual(idsCargados, [7]);
     assert.equal(resultado.filas[0].comprobanteID, 7);
     assert.equal(resultado.filas[0].subgrillas.length, 1);
     assert.equal(resultado.filas[0].subgrillas[0].columnas.length, 23);
+    assert.equal(resultado.filas[0].subgrillas[0].mostrarTitulo, false);
+    assert.deepEqual(
+        resultado.filas[0].subgrillas[0].layoutColumnas,
+        configuracionDetalle.layoutColumnas
+    );
+    assert.equal(resultado.filas[0].subgrillas[0].mostrarTitulos, false);
+    assert.equal(resultado.filas[0].subgrillas[0].mostrarTotales, false);
     assert.deepEqual(resultado.filas[0].subgrillas[0].filas, [renglon]);
     assert.deepEqual(resultado.filas[0].subgrillas[0].contextoCalculos, {
         cotizacionLocal:1,
         cotizacionReferencia:2
     });
-    assert.equal(resultado.filtros, "Detalle: Prueba");
+    assert.equal(
+        resultado.filtros,
+        "<Detalle: Prueba> <Desde número: 10> <Hasta número: 20>"
+    );
     assert.equal(resultado.busqueda, "123");
     assert.deepEqual(resultado.orden, [{ campo:"numero", direccion:"asc" }]);
     assert.equal(resultado.generadoEn, "2026-10-11T12:00:00.000Z");
+});
+
+test("omite la grilla principal y no carga detalles cuando fue excluida", async () => {
+    const modelo = {
+        prepararDatosInforme:async () => ({
+            filas:[{ comprobanteID:1, numero:100 }],
+            filtrosAplicados:{},
+            vista:{ busqueda:"", orden:[] },
+            generadoEn:"2026-10-11T12:00:00.000Z"
+        })
+    };
+    let cargasDetalle = 0;
+
+    const resultado = await prepararParametrosInformeAsientos(modelo, {
+        incluirGrilla:false,
+        incluirDetalle:false,
+        cargarDetalleAsiento:async () => {
+            cargasDetalle += 1;
+            return {};
+        }
+    });
+
+    assert.deepEqual(resultado.columnas, []);
+    assert.deepEqual(resultado.filas, []);
+    assert.equal(cargasDetalle, 0);
 });
 
 test("carga detalles únicos solamente para las filas alcanzadas por la búsqueda", async () => {

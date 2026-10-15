@@ -14,7 +14,20 @@ export default function GridEditorDecimal({
     const refInput = useRef(null);
     const cursorPendiente = useRef(null);
     const ultimoValorEmitido = useRef(valor);
+    const ultimaMascara = useRef(mascara);
     const [texto, setTexto] = useState(() => formatearValorEditorDecimal(valor, mascara));
+
+    useLayoutEffect(() => {
+        const cambioExterno = !Object.is(valor, ultimoValorEmitido.current);
+        const cambioMascara = ultimaMascara.current !== mascara;
+
+        if (!cambioExterno && !cambioMascara) return;
+
+        ultimoValorEmitido.current = valor;
+        ultimaMascara.current = mascara;
+        cursorPendiente.current = null;
+        setTexto(formatearValorEditorDecimal(valor, mascara));
+    }, [valor, mascara]);
 
     useLayoutEffect(() => {
         if (cursorPendiente.current == null || !refInput.current) return;

@@ -81,6 +81,8 @@ Las claves deben identificar realmente una fila. En Asientos se combinan `compro
 | `cargando` | Indica la carga de la primera página. |
 | `demoraIndicadorCargaMs` | Milisegundos que deben transcurrir antes de mostrar el overlay de carga. Su valor predeterminado es `0`. |
 | `formatoCantidadRegistros` | `cargados-total` muestra “x de y registros”; `cantidad` muestra “x registros”. |
+| `mostrarTotales` | Muestra u oculta el pie completo de totales y cantidad. Su valor predeterminado es `true`. |
+| `mostrarScrollHorizontal` | Muestra u oculta la pista horizontal completa. Su valor predeterminado es `true`; usar `false` solamente cuando las columnas ya se ajustan al ancho disponible. |
 | `mostrarSinDatos` | Controla el mensaje cuando no hay registros. |
 | `cargandoPaginas` | Indica que continúa la carga paginada. |
 | `totalRegistrosRemotos` | Cantidad total informada por la API. |
@@ -207,6 +209,8 @@ Las columnas relacionadas pueden estar separadas u ocultas. La selección actual
 ```
 
 La visibilidad de una acción no implementa su regla funcional. La pantalla continúa proporcionando `onEditarRegistro`, `onVerRegistro`, `onDeleteRow` o habilitando la edición interna según corresponda.
+
+`accionesMenuFila={[]}` deshabilita visualmente el menú completo sin impedir la selección y el foco de la fila.
 
 Si se proporciona `onEditarRegistro`, la acción Editar del menú flotante entrega la fila seleccionada a la pantalla:
 

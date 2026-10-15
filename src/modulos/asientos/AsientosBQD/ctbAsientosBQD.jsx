@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ABMAsientos from "../AsientosABM/ABMAsientos.jsx";
 import { MODO_ABM } from "../../../components/ABM/modosABM.js";
 import { crearColumnasAsientosBQD } from "./asientosBQD.columnas.js";
+import { COLUMNAS_RENGLONES_ASIENTO } from "../AsientosABM/abmAsientos.columnas.js";
 import "./ctbAsientosBQD.css";
 
 import { useAsientos } from "./useAsientos.js";
@@ -17,19 +18,25 @@ import { cargarFilaAsientoPorId } from "./asientosService.js";
 import { prepararParametrosInformeAsientos } from "./asientos.informes.js";
 import {
     abrirVentanaVistaPreviaBQD,
+    descargarArchivoBQD,
     mostrarArchivoEnVistaPreviaBQD
 } from "../../../components/InformesBQD/vistaPreviaBQD.js";
+import ConfiguracionInformeModal from "../../../components/InformesBQD/ConfiguracionInformeModal.jsx";
+import { VERSION_APLICACION } from "../../../config/versionAplicacion.js";
 //componente filtros
 import FiltroAsientos from "./FiltroAsientos";
 
 const GRID_STORAGE_KEY = "andromeda:grid:asientos:views";
 
 function CtbAsientosBQD({
-    ejecutarConsultaInicial = false
+    ejecutarConsultaInicial = false,
+    menuLabel = "",
+    submenuLabel = ""
 })
 
 {
 
+    const tituloInforme = [menuLabel, submenuLabel].filter(Boolean).join(" - ") || "Informe";
     const columnasVisibles = useMemo(() => crearColumnasAsientosBQD(), []);
 
     const { modelo, estado, filas:datosEditables, celdasModificadas } = useAsientos({ ejecutarConsultaInicial });
@@ -38,6 +45,7 @@ function CtbAsientosBQD({
     const [eliminandoDesdeConsulta, setEliminandoDesdeConsulta] = useState(false);
     const [errorEliminacion, setErrorEliminacion] = useState("");
     const [imprimiendo, setImprimiendo] = useState(false);
+    const [configuracionImpresion, setConfiguracionImpresion] = useState(null);
     const [errorImpresion, setErrorImpresion] = useState("");
     const controlNavegacionGrid = useRef(null);
     const filaPendienteEnfoque = useRef(null);
@@ -211,7 +219,62 @@ function CtbAsientosBQD({
         }
     }
 
-    async function imprimirConsulta() {
+    function solicitarImpresion() {
+        if (imprimiendo || configuracionImpresion) return;
+        setErrorImpresion("");
+        const columnasImprimibles = columnasVisibles.filter(
+            (columna) => columna.visible !== false
+        );
+        const camposImprimibles = new Set(
+            columnasImprimibles.map((columna) => columna.campo)
+        );
+        const layoutCabecera = gridPreferencias.layoutActualGrid.filter(
+            (columna) => camposImprimibles.has(columna.campo)
+        );
+        const columnasDetalle = COLUMNAS_RENGLONES_ASIENTO.filter(
+            (columna) => columna.visible !== false
+        );
+        setConfiguracionImpresion({
+            destino:"vistaPrevia",
+            nombreFormato:"Diseño actual de la grilla",
+            nombreEstilo:"Predeterminado",
+            columnas:columnasImprimibles,
+            layoutColumnas:layoutCabecera,
+            grillas:[{
+                grillaID:"principal",
+                nombre:"Principal",
+                incluida:true,
+                secciones:[
+                    {
+                        seccionID:"cabecera",
+                        nombre:"Cabecera",
+                        tipo:"cabecera",
+                        obligatoria:true,
+                        incluida:true,
+                        imprimirTitulos:true,
+                        imprimirTotales:true,
+                        columnas:columnasImprimibles,
+                        layoutColumnas:layoutCabecera
+                    },
+                    {
+                        seccionID:"detalle",
+                        nombre:"Detalle del asiento",
+                        tipo:"hija",
+                        incluida:true,
+                        imprimirTitulos:true,
+                        imprimirTotales:true,
+                        columnas:columnasDetalle,
+                        layoutColumnas:columnasDetalle.map((columna) => ({
+                            campo:columna.campo,
+                            ancho:columna.ancho
+                        }))
+                    }
+                ]
+            }]
+        });
+    }
+
+    async function imprimirConsulta(configuracion) {
         if (imprimiendo) return;
 
         let ventanaVistaPrevia = null;
@@ -219,16 +282,42 @@ function CtbAsientosBQD({
         setErrorImpresion("");
 
         try {
-            ventanaVistaPrevia = abrirVentanaVistaPreviaBQD();
+            const destino = configuracion.destino || "vistaPrevia";
+            if (destino === "vistaPrevia") {
+                ventanaVistaPrevia = abrirVentanaVistaPreviaBQD();
+            }
+            const grillaPrincipal = configuracion.grillas?.[0];
+            const cabecera = grillaPrincipal?.secciones?.find(
+                (seccion) => seccion.tipo === "cabecera"
+            );
+            const detalle = grillaPrincipal?.secciones?.find(
+                (seccion) => seccion.seccionID === "detalle"
+            );
+            const cargaGenerador = destino === "excel"
+                ? import("../../../components/InformesBQD/generarInformeExcelBQD.js")
+                : import("../../../components/InformesBQD/generarInformeBQD.js");
             const [parametrosInforme, generador] = await Promise.all([
                 prepararParametrosInformeAsientos(modelo, {
-                    layoutColumnas:gridPreferencias.layoutActualGrid
+                    titulo:tituloInforme,
+                    layoutColumnas:cabecera?.layoutColumnas || configuracion.layoutColumnas,
+                    interlineado:configuracion.interlineado,
+                    versionAplicacion:VERSION_APLICACION,
+                    incluirGrilla:grillaPrincipal?.incluida !== false,
+                    incluirDetalle:grillaPrincipal?.incluida !== false
+                        && detalle?.incluida !== false,
+                    configuracionDetalle:detalle
                 }),
-                import("../../../components/InformesBQD/generarInformeBQD.js")
+                cargaGenerador
             ]);
 
-            const archivo = await generador.generarArchivoInformeBQD(parametrosInforme);
-            mostrarArchivoEnVistaPreviaBQD(ventanaVistaPrevia, archivo);
+            const archivo = destino === "excel"
+                ? await generador.generarArchivoExcelBQD(parametrosInforme)
+                : await generador.generarArchivoInformeBQD(parametrosInforme);
+            if (destino === "pdf" || destino === "excel") {
+                descargarArchivoBQD(archivo, configuracion.nombreArchivo);
+            } else {
+                mostrarArchivoEnVistaPreviaBQD(ventanaVistaPrevia, archivo);
+            }
         } catch (error) {
             if (ventanaVistaPrevia && !ventanaVistaPrevia.closed) {
                 ventanaVistaPrevia.close();
@@ -254,7 +343,7 @@ function CtbAsientosBQD({
                 busquedaGrid={busquedaGrid}
                 onBusquedaGridChange={modelo.actualizarBusqueda}
                 onNuevo={abrirNuevoAsiento}
-                onImprimir={imprimirConsulta}
+                onImprimir={solicitarImpresion}
                 imprimiendo={imprimiendo}
             />
         </div>
@@ -329,6 +418,12 @@ function CtbAsientosBQD({
                     : ""
             }
             onCerrar={modelo.cerrarAviso}
+        />
+        <ConfiguracionInformeModal
+            abierto={Boolean(configuracionImpresion)}
+            configuracion={configuracionImpresion}
+            onAceptar={imprimirConsulta}
+            onCancelar={() => setConfiguracionImpresion(null)}
         />
 
 

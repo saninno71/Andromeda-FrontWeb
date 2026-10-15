@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { validateLogin } from "./authService.js";
+import { VERSION_APLICACION_ETIQUETA } from "../../config/versionAplicacion.js";
 import './Login.css'
 import logo from "../../assets/logo-andromeda.png";
 
@@ -107,7 +108,7 @@ function Login({onResult}) {
               </div>
             </div>
 
-            <span className="login-version">v5.3</span>
+            <span className="login-version">{VERSION_APLICACION_ETIQUETA}</span>
 
         </div>
     </div>

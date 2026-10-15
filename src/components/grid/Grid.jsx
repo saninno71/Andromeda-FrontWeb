@@ -68,10 +68,13 @@ function Grid({
     altoFila = 30,
     demoraIndicadorCargaMs = 0,
     formatoCantidadRegistros = "cargados-total",
+    mostrarTotales = true,
+    mostrarScrollHorizontal = true,
     ajustarAlturaAContenido = false,
     alturaMinima = 0,
     contextoCalculos = null,
     filasAlFinal = FILAS_AL_FINAL_VACIAS,
+    accionInferior = null,
     controlNavegacionRef = null,
     onNavegacionChange
 }) {
@@ -510,13 +513,29 @@ useEffect(() => {
 
     function cambiarDraftFila(campo,valorNuevo) {
 
-        setFilaEditandoDraft(draftActual =>
-            aplicarDependenciasColumnasCalculadas({
+        setFilaEditandoDraft(draftActual => {
+            const columnaEditada = columnasVisibles.find(
+                columna => columna.campo === campo
+            );
+            const valorNumerico = Number(valorNuevo);
+            const valorInformado = valorNuevo != null &&
+                valorNuevo !== "" &&
+                Number.isFinite(valorNumerico) &&
+                valorNumerico !== 0;
+            const filaSiguiente = { ...draftActual, [campo]:valorNuevo };
+
+            if (valorInformado && Array.isArray(columnaEditada?.limpiarCamposAlInformar)) {
+                columnaEditada.limpiarCamposAlInformar.forEach(campoALimpiar => {
+                    filaSiguiente[campoALimpiar] = null;
+                });
+            }
+
+            return aplicarDependenciasColumnasCalculadas({
                 filaOriginal:filaEditandoOriginal,
-                filaDraft:{ ...draftActual, [campo]:valorNuevo },
+                filaDraft:filaSiguiente,
                 columnas:columnasVisibles
-            })
-        );
+            });
+        });
 
     }
 
@@ -925,10 +944,19 @@ useEffect(() => {
         (mostrarCheck ? 1 : 0) +
         1;
 
+    const mostrarAccionInferior = Boolean(accionInferior) &&
+        accionInferior.mostrar !== false;
+
     const alturaContenido = ajustarAlturaAContenido
         ? Math.max(
             Math.max(0, Number(alturaMinima) || 0),
-            (dataOrdenada.length + 2) * altoFila + 8
+            (
+                dataOrdenada.length +
+                1 +
+                (mostrarTotales ? 1 : 0) +
+                (mostrarAccionInferior ? 1 : 0)
+            ) * altoFila +
+            (mostrarScrollHorizontal ? 8 : 0)
         )
         : null;
 
@@ -1208,30 +1236,51 @@ useEffect(() => {
 
         </div>
 
-        <div
-            className="grillaScrollHorizontal"
-            ref={refScrollHorizontal}
-            onScroll={sincronizarDesdeScrollHorizontal}
-        >
+        {mostrarAccionInferior && (
             <div
-                className="grillaScrollContenido"
-                style={{
-                    width: anchoContenidoScrollHorizontal + "px"
-                }}
-            ></div>
-        </div>
+                className="grillaAccionInferior"
+                style={{height: altoFila + "px"}}
+            >
+                <button
+                    type="button"
+                    onClick={accionInferior.onClick}
+                    disabled={accionInferior.disabled}
+                    title={accionInferior.title}
+                    aria-label={accionInferior.ariaLabel || accionInferior.texto}
+                >
+                    {accionInferior.texto}
+                </button>
+            </div>
+        )}
 
-        <GridTotalesVista
-            refGrillaTotales={refGrillaTotales}
-            mostrarCheck={mostrarCheck}
-            anchoColumnaCheck={ANCHO_COLUMNA_CHECK}
-            columnas={columnasParaMostrar}
-            totales={totalesGrid}
-            estiloColumna={estiloColumna}
-            estiloEspacioFinal={estiloEspacioFinal}
-            textoCantidadRegistros={textoCantidadRegistros}
-            cargandoPaginas={cargandoPaginas}
-        />
+        {mostrarScrollHorizontal && (
+            <div
+                className="grillaScrollHorizontal"
+                ref={refScrollHorizontal}
+                onScroll={sincronizarDesdeScrollHorizontal}
+            >
+                <div
+                    className="grillaScrollContenido"
+                    style={{
+                        width: anchoContenidoScrollHorizontal + "px"
+                    }}
+                ></div>
+            </div>
+        )}
+
+        {mostrarTotales && (
+            <GridTotalesVista
+                refGrillaTotales={refGrillaTotales}
+                mostrarCheck={mostrarCheck}
+                anchoColumnaCheck={ANCHO_COLUMNA_CHECK}
+                columnas={columnasParaMostrar}
+                totales={totalesGrid}
+                estiloColumna={estiloColumna}
+                estiloEspacioFinal={estiloEspacioFinal}
+                textoCantidadRegistros={textoCantidadRegistros}
+                cargandoPaginas={cargandoPaginas}
+            />
+        )}
 
     </div>
 

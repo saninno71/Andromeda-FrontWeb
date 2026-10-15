@@ -400,6 +400,18 @@ export function crearABMAsientos({
             if (Object.keys(cambios).length === 0) return;
             const filaActual = estado.renglones.find(fila => fila.renglonID === renglonID);
             if (!filaActual) return;
+            const debeModificado = !Object.is(filaActual.debe, cambios.debe);
+            const haberModificado = !Object.is(filaActual.haber, cambios.haber);
+            const debeInformado = importeOBlanco(cambios.debe);
+            const haberInformado = importeOBlanco(cambios.haber);
+
+            if (debeModificado && !haberModificado && Number.isFinite(debeInformado) && debeInformado !== 0) {
+                cambios.haber = null;
+            }
+            if (haberModificado && !debeModificado && Number.isFinite(haberInformado) && haberInformado !== 0) {
+                cambios.debe = null;
+            }
+
             const cambiosCalculados = {};
             if (!Object.is(filaActual.debe, cambios.debe)) {
                 cambiosCalculados.debeLocal = null;

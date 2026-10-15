@@ -82,7 +82,12 @@ function PantallaPrincipal() {
           onAbrirEstadoSistema={abrirEstadoSistema}
           estadoSistema={estadoSistema}
         />
-        <Content className="content" activeRoute={activePage.route} /> 
+        <Content
+          className="content"
+          activeRoute={activePage.route}
+          menuLabel={activePage.menuLabel}
+          submenuLabel={activePage.submenuLabel}
+        />
       </div>
       {mostrarEstadoSistema && (
         <EstadoSistemaModal

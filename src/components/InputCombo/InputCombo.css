@@ -117,6 +117,7 @@
     color:white;
 }
 
+.inputCombo:focus .inputComboTitulo,
 .inputComboTituloActivo {
     font-size:9px;
     top:-5px;

@@ -269,6 +269,52 @@ test("modificar Haber invalida sus importes calculados recibidos del endpoint", 
     assert.equal(modificado.haberReferencia, null);
 });
 
+test("informar Debe limpia el Haber existente del mismo renglón", async () => {
+    const respuestaHaber = structuredClone(respuesta);
+    respuestaHaber.lineas[0] = {
+        ...respuestaHaber.lineas[0],
+        tipo: -1,
+        importe: 50,
+        impLocal: 50,
+        impReferencia: 0.05
+    };
+    const modelo = crearABMAsientos({
+        comprobanteID: 100,
+        modo: MODO_ABM.EDICION,
+        cargarAsiento: async () => structuredClone(respuestaHaber),
+        actualizarAsiento
+    });
+    await modelo.cargar();
+
+    const original = modelo.obtenerEstado().renglones[0];
+    modelo.actualizarRenglon(10, { ...original, debe: 75 });
+
+    const modificado = modelo.obtenerEstado().renglones[0];
+    assert.equal(modificado.debe, 75);
+    assert.equal(modificado.haber, null);
+    assert.equal(modificado.haberLocal, null);
+    assert.equal(modificado.haberReferencia, null);
+});
+
+test("informar Haber limpia el Debe existente del mismo renglón", async () => {
+    const modelo = crearABMAsientos({
+        comprobanteID: 100,
+        modo: MODO_ABM.EDICION,
+        cargarAsiento,
+        actualizarAsiento
+    });
+    await modelo.cargar();
+
+    const original = modelo.obtenerEstado().renglones[0];
+    modelo.actualizarRenglon(10, { ...original, haber: 75 });
+
+    const modificado = modelo.obtenerEstado().renglones[0];
+    assert.equal(modificado.haber, 75);
+    assert.equal(modificado.debe, null);
+    assert.equal(modificado.debeLocal, null);
+    assert.equal(modificado.debeReferencia, null);
+});
+
 test("restaurar un campo de cabecera a su valor original elimina la marca de cambio", async () => {
     const modelo = crearABMAsientos({
         comprobanteID: 100,
@@ -424,7 +470,7 @@ test("guardar rechaza en el frontend un asiento desbalanceado sin llamar a la AP
     assert.equal(modelo.obtenerEstado().errorGuardado, MENSAJE_ASIENTO_DESBALANCEADO);
 });
 
-test("guardar rechaza un renglón con Debe y Haber simultáneos", async () => {
+test("informar Haber sobre un Debe existente limpia el Debe antes de validar el balance", async () => {
     let llamadas = 0;
     const modelo = crearABMAsientos({
         comprobanteID: 100,
@@ -438,11 +484,15 @@ test("guardar rechaza un renglón con Debe y Haber simultáneos", async () => {
         haber: 25
     });
 
+    const renglon = modelo.obtenerEstado().renglones[0];
+    assert.equal(renglon.debe, null);
+    assert.equal(renglon.haber, 25);
+
     const guardado = await modelo.guardar({ recargar: false });
 
     assert.equal(guardado, false);
     assert.equal(llamadas, 0);
-    assert.match(modelo.obtenerEstado().errorGuardado, /solamente en Debe o Haber/);
+    assert.equal(modelo.obtenerEstado().errorGuardado, MENSAJE_ASIENTO_DESBALANCEADO);
 });
 
 test("agregar renglón crea una fila temporal editable y el PUT la envía sin ID", async () => {

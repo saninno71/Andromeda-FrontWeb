@@ -3,7 +3,7 @@ import "./Content.css";
 import { Suspense, useMemo } from "react";
 import { getLazyPage } from "./pageLoader";
 
-function Content({activeRoute}) {
+function Content({activeRoute, menuLabel = "", submenuLabel = ""}) {
 
   const PageComponent = useMemo(() => {
     if (!activeRoute) return null;
@@ -26,7 +26,10 @@ function Content({activeRoute}) {
   } else {
     contenido = (
       <Suspense fallback={<p>Cargando página...</p>}>
-        <PageComponent />
+        <PageComponent
+          menuLabel={menuLabel}
+          submenuLabel={submenuLabel}
+        />
       </Suspense>
     );
   }

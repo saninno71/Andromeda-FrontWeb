@@ -1,0 +1,31 @@
+.menuCintaAcciones {
+    display:flex;
+    gap:5px;
+    flex-shrink:0;
+    min-width:0;
+    margin:0;
+    padding:8px 12px;
+    border:0;
+    background:#eaeaea;
+    overflow-x:auto;
+}
+
+.menuCintaItem { display:flex; gap:5px; }
+.menuCintaSeparador { width:12px; flex-shrink:0; }
+.menuCintaAcciones .botonToolbar { min-width:30px; height:32px; padding:4px 8px; flex-shrink:0; font-size:11px; }
+.menuCintaAcciones img { width:20px; height:20px; object-fit:contain; }
+.menuCintaAcciones .botonToolbar:disabled { cursor:default; }
+.menuCintaAcciones .botonToolbar.menuCintaAccionAtenuada {
+    border-color:#aaa;
+    background:#f5f5f5;
+    color:#888;
+    opacity:.55;
+}
+.menuCintaAcciones .botonToolbar.menuCintaAccionAtenuada img { filter:grayscale(1); }
+
+.menuCintaAcciones .botonToolbar.menuCintaDestino,
+.menuCintaAcciones .botonToolbar.menuCintaDestino:hover {
+    border-color:transparent;
+    background:linear-gradient(90deg,#662D91 9%,#00AEEF 93%);
+    color:#fff;
+}

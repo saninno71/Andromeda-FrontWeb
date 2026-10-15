@@ -67,6 +67,7 @@ El índice deberá enlazar cada documento cuando sea creado.
 ## Índice disponible
 
 - [Controles de entidades](controles-entidad/README.md): Empresa, Cuenta, Cliente, Proveedor, Numeración y sus editores de celda.
+- [InputCombo](input-combo/README.md): selector genérico, teclado y renderizado opcional de valores y opciones.
 - [Grilla](grilla/README.md): contrato técnico, editores, navegación y virtualización.
 - [Guía de configuración de Grilla](grilla/GUIA_CONFIGURACION_GRILLA.md): referencia para desarrolladores, parametría, estado interno, vistas y diagnóstico.
 - [Header de ventanas modales](modal-header/README.md): cierre, título y contenido adicional reutilizable.

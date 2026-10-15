@@ -244,6 +244,34 @@
     background: #E3F4FB;
 }
 
+.grillaAccionInferior {
+    display:flex;
+    align-items:center;
+    flex-shrink:0;
+    box-sizing:border-box;
+    padding:0 10px;
+    background:#F6F6F6;
+    overflow:hidden;
+}
+
+.grillaAccionInferior button {
+    min-width:0;
+    padding:0;
+    border:0;
+    background:none;
+    color:#00AEEF;
+    cursor:pointer;
+    font-family:"Inter",sans-serif;
+    font-size:var(--grid-font-size);
+    line-height:1;
+    white-space:nowrap;
+}
+
+.grillaAccionInferior button:disabled {
+    cursor:default;
+    opacity:.65;
+}
+
 .grillaScrollContenido {
     display: block;
     height: 6px;
@@ -569,7 +597,10 @@ thead th:hover .resizeColumnaHandle,
 
 .menuFilaFondo {
     position:absolute;
-    inset:0;
+    top:0;
+    right:-12px;
+    bottom:0;
+    left:-12px;
     background:inherit;
     z-index:1;
 }

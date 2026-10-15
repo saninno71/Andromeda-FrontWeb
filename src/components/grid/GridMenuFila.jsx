@@ -34,10 +34,11 @@ function GridMenuFila({
     const [anchoMenu,setAnchoMenu] = useState(0);
     const [anchoVisible,setAnchoVisible] = useState(anchoContenedor);
     const accionesVisibles = new Set(acciones);
+    const hayAccionesVisibles = accionesVisibles.size > 0;
 
     useLayoutEffect(() => {
 
-        if (!mostrarMenuFila) {
+        if (!mostrarMenuFila || !hayAccionesVisibles) {
             return;
         }
 
@@ -55,9 +56,9 @@ function GridMenuFila({
             window.removeEventListener("scroll", medirEspacioVisible, true);
         };
 
-    }, [mostrarMenuFila, anchoContenedor]);
+    }, [mostrarMenuFila, hayAccionesVisibles, anchoContenedor]);
 
-    if (!filaSeleccionada || !mostrarMenuFila) {
+    if (!filaSeleccionada || !mostrarMenuFila || !hayAccionesVisibles) {
         return null;
     }
 

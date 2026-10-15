@@ -11,7 +11,7 @@ import InputTexto from "../../../components/InputTexto/InputTexto";
 import InputCombo from "../../../components/InputCombo/InputCombo";
 import ModalHeader from "../../../components/ModalHeader/ModalHeader";
 import ModalConfirmacion from "../../../components/ModalConfirmacion/ModalConfirmacion";
-import ABMCintaAcciones from "../../../components/ABM/ABMCintaAcciones/ABMCintaAcciones";
+import MenuCintaAcciones from "../../../components/MenuCintaAcciones/MenuCintaAcciones";
 import ABMIndicadorModo from "../../../components/ABM/ABMIndicadorModo/ABMIndicadorModo";
 import ABMNavegacionRegistros from "../../../components/ABM/ABMNavegacionRegistros/ABMNavegacionRegistros";
 import ABMPieAcciones from "../../../components/ABM/ABMPieAcciones/ABMPieAcciones";
@@ -96,7 +96,7 @@ export default function ABMAsientos({
         { id:"eliminar", disabled:presentacionCinta.deshabilitarEliminacion || estado.guardando, onClick:() => setConfirmarEliminacion(true), icono:<img src={eliminar} alt="Eliminar" /> },
         { id:"ver", disabled:presentacionCinta.deshabilitarConsulta || estado.guardando, onClick:() => activarModo(MODO_ABM.CONSULTA), icono:<img src={ver} alt="Ver" /> },
         { id:"imprimir", separadorAntes:true, icono:<img src={imprimir} alt="Imprimir" /> },
-        { id:"destino", texto:"DESTINO", className:"abmCintaDestino" },
+        { id:"destino", texto:"DESTINO", className:"menuCintaDestino" },
         { id:"dinero", separadorAntes:true, icono:<img src={dinero} alt="Operación monetaria" /> },
         {
             id:"navegacion",
@@ -244,7 +244,7 @@ export default function ABMAsientos({
                     onCerrar={onCerrar}
                     contenidoAdicional={<ABMIndicadorModo modo={estado.modo} />}
                 />
-                <ABMCintaAcciones
+                <MenuCintaAcciones
                     acciones={accionesCinta}
                     ariaLabel="Acciones del asiento"
                 />
@@ -277,17 +277,8 @@ export default function ABMAsientos({
                         </div>
                     </div>
                     <div className="abmAsientosDetalle">
-                        <Grid columnasVisibles={COLUMNAS_RENGLONES_ASIENTO} dataGrid={estado.renglones} contextoCalculos={contextoCalculos} editable={esEdicion && !estado.guardando} accionesMenuFila={esEdicion ? ["editar", "eliminar"] : []} onRowChange={({ filaNueva }) => modelo.actualizarRenglon(filaNueva.renglonID, filaNueva)} onDeleteRow={({ fila }) => modelo.eliminarRenglon(fila.renglonID)} onEdicionChange={manejarEdicionGrid} controlNavegacionRef={controlGrid} mostrarCheck={false} mostrarSinDatos={estado.cargado && !esAlta} cargando={estado.cargando} demoraIndicadorCargaMs={500} formatoCantidadRegistros="cantidad" ajustarAlturaAContenido alturaMinima={205} />
+                        <Grid columnasVisibles={COLUMNAS_RENGLONES_ASIENTO} dataGrid={estado.renglones} contextoCalculos={contextoCalculos} editable={esEdicion && !estado.guardando} accionesMenuFila={esEdicion ? ["editar", "eliminar"] : []} onRowChange={({ filaNueva }) => modelo.actualizarRenglon(filaNueva.renglonID, filaNueva)} onDeleteRow={({ fila }) => modelo.eliminarRenglon(fila.renglonID)} onEdicionChange={manejarEdicionGrid} controlNavegacionRef={controlGrid} mostrarCheck={false} mostrarSinDatos={estado.cargado && !esAlta} cargando={estado.cargando} demoraIndicadorCargaMs={500} formatoCantidadRegistros="cantidad" ajustarAlturaAContenido alturaMinima={205} accionInferior={{ mostrar: true, texto: "+ Agregar ítem", onClick: agregarItem, disabled: !esEdicion || estado.guardando || estado.cargando }} />
                     </div>
-                    <fieldset className="abmAccionesDetalle">
-                        <button
-                            type="button"
-                            onClick={agregarItem}
-                            disabled={!esEdicion || estado.guardando || estado.cargando}
-                        >
-                            + Agregar ítem
-                        </button>
-                    </fieldset>
                     <div className="abmAsientosInferior">
                         <div className="abmNumeracion">
                             <ComboNumeraciones titulo="Numeración" valor={estado.numeracion} onChange={cambiar("numeracion")} disabled={!campoEditable("numeracion")} />

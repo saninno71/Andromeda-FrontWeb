@@ -8,9 +8,11 @@ import { obtenerValorColumna } from "../grid/gridValores.js";
 import {
     agruparColumnasInforme,
     aplicarLayoutColumnasInforme,
-    prepararFilasInformeBQD
+    prepararFilasInformeBQD,
+    truncarTextoAlAncho
 } from "./informeBQD.funcional.js";
 import { paginarBloquesAnidadosInforme } from "./paginacionInformeBQD.js";
+import { normalizarColorInterlineado } from "./coloresInterlineado.js";
 
 const PDFDocument = PDFKit.PDFDocument ?? PDFKit.default;
 PDFKit.registerStdFonts?.(Helvetica, HelveticaBold);
@@ -33,7 +35,7 @@ const TIPOGRAFIA = Object.freeze({
     titulo:8
 });
 
-const FONDO_SUBGRILLA = "#D9D9D9";
+const IDENTIFICACION_BASE_DATOS_TEMPORAL = "XX (XX-DBGA)";
 
 function alineacion(columna) {
     return ["left", "center", "right"].includes(columna.align)
@@ -62,14 +64,14 @@ function configurarFuente(documento, negrita, tamano, color = "#202020") {
 
 function crearMedidor(documento) {
     const cache = new Map();
-    return ({ texto, ancho, negrita = false, tamano }) => {
+    return ({ texto, ancho, negrita = false, tamano, ajustarTexto = true }) => {
         configurarFuente(documento, negrita, tamano);
         const contenido = String(texto ?? "");
         const anchoTexto = Math.max(1, ancho - 3);
-        const clave = `${negrita ? 1 : 0}|${tamano}|${anchoTexto.toFixed(2)}|${contenido}`;
+        const clave = `${negrita ? 1 : 0}|${ajustarTexto ? 1 : 0}|${tamano}|${anchoTexto.toFixed(2)}|${contenido}`;
         if (cache.has(clave)) return cache.get(clave);
         const altoLinea = documento.currentLineHeight(true);
-        const alto = contenido
+        const alto = contenido && ajustarTexto
             ? documento.heightOfString(contenido, { width:anchoTexto, lineGap:0 })
             : altoLinea;
         const resultado = Math.max(altoLinea, alto) + 2;
@@ -87,7 +89,8 @@ function medirLinea({ columnas, textos, x, ancho, medir, negrita, tamano }) {
         texto:celda.texto,
         ancho:celda.ancho,
         negrita,
-        tamano
+        tamano,
+        ajustarTexto:celda.columna.desdoblarTexto === true
     })));
     return { celdas, alto };
 }
@@ -96,10 +99,20 @@ function dibujarLinea(documento, linea, y, { negrita = false, tamano }) {
     configurarFuente(documento, negrita, tamano);
     linea.celdas.forEach(celda => {
         if (!celda.texto) return;
-        documento.text(celda.texto, celda.x + 1.5, y + 1, {
-            width:Math.max(1, celda.ancho - 3),
+        const anchoTexto = Math.max(1, celda.ancho - 3);
+        const ajustarTexto = celda.columna.desdoblarTexto === true;
+        const texto = ajustarTexto
+            ? celda.texto
+            : truncarTextoAlAncho(
+                celda.texto,
+                anchoTexto,
+                (contenido) => documento.widthOfString(contenido)
+            );
+        documento.text(texto, celda.x + 1.5, y + 1, {
+            width:anchoTexto,
             align:alineacion(celda.columna),
-            lineGap:0
+            lineGap:0,
+            lineBreak:ajustarTexto
         });
     });
 }
@@ -107,7 +120,6 @@ function dibujarLinea(documento, linea, y, { negrita = false, tamano }) {
 function prepararCabecera(documento, propiedades, lineasColumnas, medir) {
     const ancho = documento.page.width - PAGINA.margenIzquierdo - PAGINA.margenDerecho;
     const filtros = `Filtros: ${propiedades.filtros || "Sin filtros"}`;
-    const fecha = new Date(propiedades.generadoEn).toLocaleString("es-AR");
     const lineas = lineasColumnas.map(columnas => medirLinea({
         columnas,
         textos:columnas.map(columna => columna.titulo),
@@ -132,7 +144,7 @@ function prepararCabecera(documento, propiedades, lineasColumnas, medir) {
         + 2
         + lineas.reduce((suma, linea) => suma + linea.alto, 0)
         + 2;
-    return { ancho, filtros, fecha, lineas, inicioDatos };
+    return { ancho, filtros, lineas, inicioDatos };
 }
 
 function dibujarCabecera(documento, propiedades, cabecera, cantidadRegistros) {
@@ -141,8 +153,11 @@ function dibujarCabecera(documento, propiedades, cabecera, cantidadRegistros) {
     let y = PAGINA.margenSuperior;
 
     configurarFuente(documento, false, TIPOGRAFIA.encabezado);
-    documento.text("Andrómeda", x, y, { width:ancho / 2, lineBreak:false });
-    documento.text(cabecera.fecha, x + ancho / 2, y, {
+    const nombreAplicacion = propiedades.versionAplicacion
+        ? `Andromeda Web (v${propiedades.versionAplicacion})`
+        : "Andromeda Web";
+    documento.text(nombreAplicacion, x, y, { width:ancho / 2, lineBreak:false });
+    documento.text(IDENTIFICACION_BASE_DATOS_TEMPORAL, x + ancho / 2, y, {
         width:ancho / 2,
         align:"right",
         lineBreak:false
@@ -206,11 +221,11 @@ function prepararBloques(documento, filas, lineasColumnas, ancho, medir) {
     });
 }
 
-function dibujarBloque(documento, bloque, y, ancho) {
+function dibujarBloque(documento, bloque, y, ancho, colorInterlineado) {
     const altoFondo = bloque.altoPrincipal - PAGINA.separacionRegistro;
     const tieneSubgrillas = bloque.subgrillas.length > 0;
     if (!tieneSubgrillas && bloque.indice % 2 === 0) {
-        documento.rect(PAGINA.margenIzquierdo, y, ancho, altoFondo).fill("#D9D9D9");
+        documento.rect(PAGINA.margenIzquierdo, y, ancho, altoFondo).fill(colorInterlineado);
     }
     let cursorY = y + 1.5;
     bloque.lineas.forEach(linea => {
@@ -246,17 +261,23 @@ function prepararSubgrillas(documento, definiciones, anchoPadre, medir) {
             definicion.layoutColumnas ?? []
         );
         const gruposColumnas = agruparColumnasInforme(columnas);
-        const cabeceras = gruposColumnas.map(grupo => medirLinea({
-            columnas:grupo,
-            textos:grupo.map(columna => columna.titulo),
-            x,
-            ancho,
-            medir,
-            negrita:true,
-            tamano:TIPOGRAFIA.tituloColumna
-        }));
-        configurarFuente(documento, true, TIPOGRAFIA.tituloSubgrilla);
-        const altoTitulo = documento.currentLineHeight(true) + 2;
+        const cabeceras = definicion.mostrarTitulos === false
+            ? []
+            : gruposColumnas.map(grupo => medirLinea({
+                columnas:grupo,
+                textos:grupo.map(columna => columna.titulo),
+                x,
+                ancho,
+                medir,
+                negrita:true,
+                tamano:TIPOGRAFIA.tituloColumna
+            }));
+        const mostrarTitulo = definicion.mostrarTitulo !== false;
+        let altoTitulo = 0;
+        if (mostrarTitulo) {
+            configurarFuente(documento, true, TIPOGRAFIA.tituloSubgrilla);
+            altoTitulo = documento.currentLineHeight(true) + 2;
+        }
         const filas = (definicion.filas ?? []).map(fila => {
             const lineas = gruposColumnas.map(grupo => medirLinea({
                 columnas:grupo,
@@ -299,6 +320,7 @@ function prepararSubgrillas(documento, definiciones, anchoPadre, medir) {
         }
         return {
             titulo:definicion.titulo || "Detalle",
+            mostrarTitulo,
             x,
             ancho,
             cabeceras,
@@ -312,17 +334,20 @@ function prepararSubgrillas(documento, definiciones, anchoPadre, medir) {
     });
 }
 
-function dibujarCabeceraSubgrilla(documento, subgrilla, y, continuacion) {
-    documento.rect(subgrilla.x, y, subgrilla.ancho, subgrilla.altoCabecera).fill(FONDO_SUBGRILLA);
+function dibujarCabeceraSubgrilla(documento, subgrilla, y, continuacion, colorInterlineado) {
+    documento.rect(subgrilla.x, y, subgrilla.ancho, subgrilla.altoCabecera)
+        .fill(colorInterlineado);
     let cursorY = y + 2;
-    configurarFuente(documento, true, TIPOGRAFIA.tituloSubgrilla);
-    documento.text(
-        `${subgrilla.titulo}${continuacion ? " (continuación)" : ""}`,
-        subgrilla.x + 1.5,
-        cursorY,
-        { width:subgrilla.ancho - 3, lineBreak:false }
-    );
-    cursorY += subgrilla.altoTitulo;
+    if (subgrilla.mostrarTitulo) {
+        configurarFuente(documento, true, TIPOGRAFIA.tituloSubgrilla);
+        documento.text(
+            `${subgrilla.titulo}${continuacion ? " (continuación)" : ""}`,
+            subgrilla.x + 1.5,
+            cursorY,
+            { width:subgrilla.ancho - 3, lineBreak:false }
+        );
+        cursorY += subgrilla.altoTitulo;
+    }
     subgrilla.cabeceras.forEach(linea => {
         dibujarLinea(documento, linea, cursorY, {
             negrita:true,
@@ -333,10 +358,10 @@ function dibujarCabeceraSubgrilla(documento, subgrilla, y, continuacion) {
     return y + subgrilla.altoCabecera;
 }
 
-function dibujarFilaSubgrilla(documento, componente, y) {
+function dibujarFilaSubgrilla(documento, componente, y, colorInterlineado) {
     const { subgrilla, fila } = componente;
     documento.rect(subgrilla.x, y, subgrilla.ancho, fila.alto)
-        .fill(FONDO_SUBGRILLA);
+        .fill(colorInterlineado);
     let cursorY = y + 1;
     fila.lineas.forEach(linea => {
         dibujarLinea(documento, linea, cursorY, {
@@ -348,8 +373,9 @@ function dibujarFilaSubgrilla(documento, componente, y) {
     return y + fila.alto;
 }
 
-function dibujarTotalesSubgrilla(documento, subgrilla, totales, y) {
-    documento.rect(subgrilla.x, y, subgrilla.ancho, totales.alto).fill(FONDO_SUBGRILLA);
+function dibujarTotalesSubgrilla(documento, subgrilla, totales, y, colorInterlineado) {
+    documento.rect(subgrilla.x, y, subgrilla.ancho, totales.alto)
+        .fill(colorInterlineado);
     let cursorY = y + 1;
     totales.lineas.forEach(linea => {
         dibujarLinea(documento, linea, cursorY, {
@@ -361,25 +387,33 @@ function dibujarTotalesSubgrilla(documento, subgrilla, totales, y) {
     return y + totales.alto;
 }
 
-function dibujarComponente(documento, componente, y, ancho) {
+function dibujarComponente(documento, componente, y, ancho, colorInterlineado) {
     switch (componente.tipo) {
         case "principal":
-            return dibujarBloque(documento, componente.bloque, y, ancho);
+            return dibujarBloque(
+                documento,
+                componente.bloque,
+                y,
+                ancho,
+                colorInterlineado
+            );
         case "subgrillaCabecera":
             return dibujarCabeceraSubgrilla(
                 documento,
                 componente.subgrilla,
                 y,
-                componente.continuacion
+                componente.continuacion,
+                colorInterlineado
             );
         case "subgrillaFila":
-            return dibujarFilaSubgrilla(documento, componente, y);
+            return dibujarFilaSubgrilla(documento, componente, y, colorInterlineado);
         case "subgrillaTotales":
             return dibujarTotalesSubgrilla(
                 documento,
                 componente.subgrilla,
                 componente.totales,
-                y
+                y,
+                colorInterlineado
             );
         default:
             return y;
@@ -405,6 +439,7 @@ function dibujarPies(documento) {
 }
 
 export async function generarArchivoInformeBQD(propiedades) {
+    const colorInterlineado = normalizarColorInterlineado(propiedades.interlineado);
     const columnas = aplicarLayoutColumnasInforme(
         propiedades.columnas,
         propiedades.layoutColumnas
@@ -438,7 +473,13 @@ export async function generarArchivoInformeBQD(propiedades) {
         if (indicePagina > 0) agregarPagina(documento);
         let y = dibujarCabecera(documento, propiedades, cabecera, filas.length);
         componentesPagina.forEach(componente => {
-            y = dibujarComponente(documento, componente, y, cabecera.ancho);
+            y = dibujarComponente(
+                documento,
+                componente,
+                y,
+                cabecera.ancho,
+                colorInterlineado
+            );
         });
     });
 

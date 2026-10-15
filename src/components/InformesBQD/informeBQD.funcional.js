@@ -19,7 +19,11 @@ export function aplicarLayoutColumnasInforme(columnas = [], layout = []) {
             if (!columna || incorporadas.has(columna.campo)) return;
             ordenadas.push({
                 ...columna,
-                ancho:anchoColumna(configuracion)
+                ancho:anchoColumna(configuracion),
+                visible:configuracion.visible ?? columna.visible,
+                desdoblarTexto:configuracion.desdoblarTexto ?? columna.desdoblarTexto,
+                titulo:configuracion.titulo ?? columna.titulo,
+                transporte:configuracion.transporte ?? columna.transporte
             });
             incorporadas.add(columna.campo);
         });
@@ -31,6 +35,24 @@ export function aplicarLayoutColumnasInforme(columnas = [], layout = []) {
     });
 
     return ordenadas.filter(columna => columna.visible !== false);
+}
+
+export function truncarTextoAlAncho(texto, anchoDisponible, medirTexto) {
+    const contenido = String(texto ?? "");
+    if (!contenido || typeof medirTexto !== "function") return contenido;
+    if (medirTexto(contenido) <= anchoDisponible) return contenido;
+
+    let minimo = 0;
+    let maximo = contenido.length;
+    while (minimo < maximo) {
+        const cantidad = Math.ceil((minimo + maximo) / 2);
+        if (medirTexto(contenido.slice(0, cantidad)) <= anchoDisponible) {
+            minimo = cantidad;
+        } else {
+            maximo = cantidad - 1;
+        }
+    }
+    return contenido.slice(0, minimo);
 }
 
 export function agruparColumnasInforme(columnas = [], anchoLinea = ANCHO_LINEA_DEFAULT) {

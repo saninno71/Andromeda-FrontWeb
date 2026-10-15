@@ -8,7 +8,7 @@ Grilla administra visualización, columnas, selección, ordenamiento, resize, sc
 
 El menú flotante comunica intención mediante callbacks genéricos: `onEditarRegistro` para edición y `onVerRegistro` para consulta. Grilla no define ni conserva el modo del ABM.
 
-Los iconos visibles se declaran con `accionesMenuFila`. La pantalla consumidora elige entre `editar`, `eliminar`, `ver`, `accion4`, `accion5` y `accion6`; si omite la propiedad se conserva el menú completo por compatibilidad.
+Los iconos visibles se declaran con `accionesMenuFila`. La pantalla consumidora elige entre `editar`, `eliminar`, `ver`, `accion4`, `accion5` y `accion6`; si omite la propiedad se conserva el menú completo por compatibilidad. Un arreglo vacío mantiene la selección y el foco de la fila, pero no renderiza ningún contenedor ni fondo de menú sobre sus datos.
 
 No deben incorporarse reglas funcionales de Asientos ni llamadas a APIs de entidades dentro de Grilla.
 
@@ -128,7 +128,7 @@ El desplazamiento, tanto programático como manual, oculta el menú flotante per
 
 ## Altura según el contenido
 
-`ajustarAlturaAContenido` hace que Grid calcule su altura con el encabezado, todas las filas, el scroll horizontal y la fila de totales. `alturaMinima` conserva el tamaño visual mínimo solicitado por la pantalla. En esta modalidad no se representa el scrollbar vertical propio; si el conjunto completo supera el viewport, el contenedor exterior debe proporcionar el desplazamiento vertical.
+`ajustarAlturaAContenido` hace que Grid calcule su altura con el encabezado, todas las filas y los elementos habilitados: el scroll horizontal cuando `mostrarScrollHorizontal` no es `false` y la fila de totales cuando `mostrarTotales` no es `false`. `alturaMinima` conserva el tamaño visual mínimo solicitado por la pantalla. En esta modalidad no se representa el scrollbar vertical propio; si el conjunto completo supera el viewport, el contenedor exterior debe proporcionar el desplazamiento vertical.
 
 ```jsx
 <Grid
@@ -182,6 +182,8 @@ Las columnas calculadas son siempre de solo lectura, aunque se configure acciden
 - El contorno exterior usa radio de `5px`: las esquinas superiores pertenecen al encabezado y las inferiores a la fila de totales. Las celdas, columnas y separaciones internas conservan esquinas rectas; los contenedores recortan el fondo correctamente durante el scroll horizontal.
 - `demoraIndicadorCargaMs` demora solamente la aparición del overlay “Procesando”; el estado funcional `cargando` se aplica inmediatamente. Esto evita destellos en cargas rápidas sin ocultar una demora real.
 - `formatoCantidadRegistros` controla el contador de la fila de totales. `cargados-total` presenta “x de y registros”; `cantidad` presenta solamente “x registros”. Esta decisión es independiente de la presencia de checks.
+- `mostrarTotales={false}` omite por completo la fila de totales y el contador. El valor predeterminado es `true` para conservar el comportamiento de las grillas existentes.
+- `mostrarScrollHorizontal={false}` omite la pista horizontal y el espacio que ocupa. Debe utilizarse cuando el consumidor garantiza que las columnas entran en el ancho disponible, por ejemplo junto con `ajustarColumnasAlAncho`.
 - Los cambios declarativos de `visible` deben sincronizarse aunque el conjunto y el orden de campos no cambien.
 - Las celdas editables conservan la alineación declarada por la columna.
 - El marco de edición pertenece a la celda editable completa.

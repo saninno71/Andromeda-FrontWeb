@@ -11,7 +11,10 @@ function InputCombo({
     onEnter,
     icono,
     tabIndex,
-    disabled = false
+    disabled = false,
+    className = "",
+    renderItem,
+    renderValor
 })
 
 {
@@ -19,6 +22,9 @@ function InputCombo({
     const [indiceActivo,setIndiceActivo] = useState(0);
     const comboRef = useRef(null);
     const controlRef = useRef(null);
+    const itemSeleccionado = items.find(
+        (item) => item[campoDescripcion] === valor
+    );
 
     function abrirCombo() {
 
@@ -92,7 +98,7 @@ function InputCombo({
 
     return (
 
-    <div className="inputComboContainer" ref={comboRef}>
+    <div className={`inputComboContainer ${className}`} ref={comboRef}>
 
         <div
             ref={controlRef}
@@ -174,7 +180,9 @@ function InputCombo({
 
                 {valor && (
                     <div className="inputComboValor">
-                        {valor}
+                        {renderValor && itemSeleccionado
+                            ? renderValor(itemSeleccionado)
+                            : valor}
                     </div>
                 )}
 
@@ -204,7 +212,9 @@ function InputCombo({
                         onMouseEnter={() => setIndiceActivo(indice)}
                         onClick={() => seleccionarItem(item)}
                     >
-                        {item[campoDescripcion]}
+                        {renderItem
+                            ? renderItem(item)
+                            : item[campoDescripcion]}
                     </div>
 
                 ))}

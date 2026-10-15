@@ -7,7 +7,7 @@ Los formularios modales de alta, baja y modificación comparten tres zonas visua
 ```text
 ModalHeader
 └── ABMIndicadorModo (alta/edición)
-ABMCintaAcciones
+MenuCintaAcciones
 └── ABMNavegacionRegistros (opcional)
 cuerpo específico de la pantalla
 ABMPieAcciones
@@ -44,9 +44,9 @@ Se entrega a `ModalHeader.contenidoAdicional` y recibe el `modo` vigente del est
 
 Durante el alta el indicador permanece en `Registro nuevo`. Aceptar crea el registro y cierra el ABM; la pantalla coordinadora recibe el ID persistido, actualiza su fuente y la reposiciona mediante `Grid.ubicarFila(fila)`.
 
-## ABMCintaAcciones
+## MenuCintaAcciones
 
-Ruta: `src/components/ABM/ABMCintaAcciones/ABMCintaAcciones.jsx`.
+Ruta: `src/components/MenuCintaAcciones/MenuCintaAcciones.jsx`.
 
 Props generales:
 
@@ -87,7 +87,7 @@ Todo ABM cuyo cuerpo tenga desplazamiento vertical debe usar `useScrollErrorABM(
 
 Ruta: `src/components/ABM/ABMNavegacionRegistros/ABMNavegacionRegistros.jsx`.
 
-Es el grupo reutilizable de los botones Primero, Anterior, Siguiente y Último. Se inserta como `componente` de una acción de `ABMCintaAcciones` y no conoce Grilla, entidades, IDs ni servicios.
+Es el grupo reutilizable de los botones Primero, Anterior, Siguiente y Último. Se inserta como `componente` de una acción de `MenuCintaAcciones` y no conoce Grilla, entidades, IDs ni servicios.
 
 | Prop | Uso |
 |---|---|
@@ -157,7 +157,7 @@ Actualmente son reutilizables:
 
 - `MODO_ABM` y sus funciones de consulta;
 - `ModalHeader` y `ABMIndicadorModo`;
-- `ABMCintaAcciones`;
+- `MenuCintaAcciones`;
 - `ABMNavegacionRegistros`;
 - `ABMPieAcciones`;
 - la API pública de Grid para confirmar una edición y navegar por su conjunto virtualizado.
@@ -267,7 +267,7 @@ Ese contrato separa la mecánica general de las decisiones propias de cada entid
   contenidoAdicional={<ABMIndicadorModo modo={modo} />}
 />
 
-<ABMCintaAcciones acciones={acciones} ariaLabel="Acciones del asiento" />
+<MenuCintaAcciones acciones={acciones} ariaLabel="Acciones del asiento" />
 
 <main>{/* contenido específico */}</main>
 

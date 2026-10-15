@@ -1,0 +1,4 @@
+/* global __APP_VERSION__ */
+
+export const VERSION_APLICACION = __APP_VERSION__;
+export const VERSION_APLICACION_ETIQUETA = `v${VERSION_APLICACION}`;

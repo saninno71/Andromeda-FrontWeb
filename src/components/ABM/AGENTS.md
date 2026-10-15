@@ -20,8 +20,8 @@ No dar por completo un ABM porque representa controles y llama a un endpoint. Ta
 ## Componentes comunes
 
 - Reutilizar `ModalHeader` para título y cierre; los agregados propios del ABM se entregan mediante `contenidoAdicional`.
-- Reutilizar `ABMCintaAcciones` para acciones superiores configuradas mediante descriptores.
-- Reutilizar `ABMNavegacionRegistros` dentro de `ABMCintaAcciones` cuando un ABM deba recorrer los registros de su pantalla de origen.
+- Reutilizar `MenuCintaAcciones` para acciones superiores configuradas mediante descriptores.
+- Reutilizar `ABMNavegacionRegistros` dentro de `MenuCintaAcciones` cuando un ABM deba recorrer los registros de su pantalla de origen.
 - Reutilizar `ABMIndicadorModo` dentro de `ModalHeader.contenidoAdicional`: alta muestra `Registro nuevo` con punto verde, edición muestra `Modo edición` con punto azul y consulta muestra `Modo consulta` con punto gris.
 - Reutilizar `ABMPieAcciones` para Cancelar, Aplicar y Aceptar.
 - No copiar el JSX o los estilos de estos componentes dentro de una pantalla particular.

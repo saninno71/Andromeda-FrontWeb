@@ -40,8 +40,8 @@ export function describirFiltrosInformeAsientos(filtros = {}) {
         ["Hasta número", filtros.numeroHasta]
     ]
         .filter(([, valor]) => valor !== null && valor !== undefined && valor !== "")
-        .map(([titulo, valor]) => `${titulo}: ${valor}`)
-        .join(" | ");
+        .map(([titulo, valor]) => `<${titulo}: ${valor}>`)
+        .join(" ");
 }
 
 function crearErrorCancelacion() {
@@ -84,23 +84,27 @@ async function mapearConConcurrencia(valores, limite, operacion) {
     return resultados;
 }
 
-function crearSubgrillaDetalleAsiento(estado) {
+function crearSubgrillaDetalleAsiento(estado, configuracion = {}) {
     return {
         titulo:"Detalle del asiento",
+        mostrarTitulo:false,
         columnas:COLUMNAS_RENGLONES_ASIENTO,
+        layoutColumnas:configuracion.layoutColumnas || [],
         filas:estado.renglones,
         contextoCalculos:{
             cotizacionLocal:estado.tipoCambioLocal,
             cotizacionReferencia:estado.tipoCambioReferencia
         },
-        mostrarTotales:true
+        mostrarTitulos:configuracion.imprimirTitulos !== false,
+        mostrarTotales:configuracion.imprimirTotales !== false
     };
 }
 
 async function cargarSubgrillasAsientos(filas, {
     cargarDetalleAsiento = cargarDetalleAsientoConModelo,
     concurrenciaDetalles = CONCURRENCIA_DETALLES_DEFAULT,
-    signal
+    signal,
+    configuracionDetalle
 } = {}) {
     const ids = [...new Set(filas
         .map(fila => Number(fila?.comprobanteID))
@@ -109,27 +113,35 @@ async function cargarSubgrillasAsientos(filas, {
         verificarCancelacion(signal);
         return cargarDetalleAsiento(id, { signal });
     });
-    return new Map(ids.map((id, indice) => [id, crearSubgrillaDetalleAsiento(estados[indice])]));
+    return new Map(ids.map((id, indice) => [
+        id,
+        crearSubgrillaDetalleAsiento(estados[indice], configuracionDetalle)
+    ]));
 }
 
 export async function prepararParametrosInformeAsientos(
     modelo,
     {
+        titulo = "Informe",
         layoutColumnas = [],
+        interlineado = "LightGray",
+        versionAplicacion = "",
+        incluirGrilla = true,
         incluirDetalle = true,
+        configuracionDetalle,
         cargarDetalleAsiento,
         concurrenciaDetalles = CONCURRENCIA_DETALLES_DEFAULT,
         ...opcionesDatos
     } = {}
 ) {
     const informe = await prepararInformeAsientos(modelo, opcionesDatos);
-    const columnas = crearColumnasAsientosBQD();
-    let filas = informe.filas;
+    const columnas = incluirGrilla ? crearColumnasAsientosBQD() : [];
+    let filas = incluirGrilla ? informe.filas : [];
 
     if (incluirDetalle) {
         const columnasPresentadas = aplicarLayoutColumnasInforme(columnas, layoutColumnas);
         const filasPresentadas = prepararFilasInformeBQD({
-            filas:informe.filas,
+            filas,
             columnas:columnasPresentadas,
             busqueda:informe.vista.busqueda,
             orden:informe.vista.orden
@@ -137,19 +149,22 @@ export async function prepararParametrosInformeAsientos(
         const subgrillasPorID = await cargarSubgrillasAsientos(filasPresentadas, {
             cargarDetalleAsiento,
             concurrenciaDetalles,
-            signal:opcionesDatos.signal
+            signal:opcionesDatos.signal,
+            configuracionDetalle
         });
-        filas = informe.filas.map(fila => {
+        filas = filas.map(fila => {
             const subgrilla = subgrillasPorID.get(Number(fila?.comprobanteID));
             return subgrilla ? { ...fila, subgrillas:[subgrilla] } : fila;
         });
     }
 
     return {
-        titulo:"Asientos",
+        titulo,
         columnas,
         layoutColumnas,
         filas,
+        interlineado,
+        versionAplicacion,
         filtros:describirFiltrosInformeAsientos(informe.filtrosAplicados),
         busqueda:informe.vista.busqueda,
         orden:informe.vista.orden,
