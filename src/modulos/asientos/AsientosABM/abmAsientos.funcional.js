@@ -4,6 +4,10 @@ import {
     puedeEditarCampoAsiento
 } from "./abmAsientos.permisos.js";
 import { validarBalanceLineasAsiento } from "./abmAsientos.validaciones.js";
+import {
+    cargarEntidadesExternasAsiento,
+    crearEstadoEntidadesExternasAsiento
+} from "./abmAsientos.entidadesExternas.js";
 
 function obtenerFecha(valor) {
     if (valor instanceof Date) return new Date(valor);
@@ -59,6 +63,7 @@ function crearEstadoInicial(comprobanteID, modo) {
         puntoVenta: "",
         numero: "",
         observaciones: "",
+        entidadesExternas: crearEstadoEntidadesExternasAsiento(),
         renglones: []
     };
 }
@@ -99,6 +104,7 @@ export function transformarAsientoABM(asiento, comprobanteID, modo = MODO_ABM.CO
         puntoVenta: asiento.puntoVenta ?? "",
         numero: asiento.numero ?? "",
         observaciones: asiento.observaciones ?? "",
+        entidadesExternas: crearEstadoEntidadesExternasAsiento(asiento.empresaId, { cargando: true }),
         renglones: (asiento.lineas ?? []).map(linea => {
             const importe = linea.importe ?? 0;
             return {
@@ -300,6 +306,7 @@ export function crearABMAsientos({
     actualizarAsiento,
     crearAsiento,
     eliminarAsiento,
+    cargarEmpresaDetalle,
     modo = MODO_ABM.CONSULTA
 }) {
     if (!esModoAlta(modo) && (!Number.isInteger(Number(comprobanteID)) || Number(comprobanteID) <= 0)) {
@@ -323,6 +330,8 @@ export function crearABMAsientos({
     let proximoRenglonTemporalID = -1;
     let secuenciaCarga = 0;
     let controladorCarga = null;
+    let secuenciaEntidadesExternas = 0;
+    let controladorEntidadesExternas = null;
     let estado = crearEstadoInicial(idActivo, modo);
     let estadoBase = copiar(estado);
     const oyentes = new Set();
@@ -338,6 +347,41 @@ export function crearABMAsientos({
             errorGuardado: null
         });
     };
+
+    async function recargarEmpresaExterna(empresaID) {
+        const secuencia = ++secuenciaEntidadesExternas;
+        controladorEntidadesExternas?.abort();
+        controladorEntidadesExternas = new AbortController();
+        const { signal } = controladorEntidadesExternas;
+
+        publicar({
+            entidadesExternas: crearEstadoEntidadesExternasAsiento(empresaID, { cargando: true })
+        });
+
+        try {
+            const entidadesExternas = await cargarEntidadesExternasAsiento(empresaID, {
+                cargarEmpresa: cargarEmpresaDetalle,
+                signal
+            });
+            if (secuencia !== secuenciaEntidadesExternas || signal.aborted) return;
+            if (Number(estado.empresa?.empresaID) !== Number(empresaID)) return;
+            publicar({ entidadesExternas });
+        } catch (error) {
+            if (secuencia !== secuenciaEntidadesExternas || signal.aborted || error?.name === "AbortError") return;
+            publicar({
+                entidadesExternas: {
+                    empresa: {
+                        empresaID: Number(empresaID) || null,
+                        estado: "error",
+                        datos: null,
+                        error: error?.message || "No se pudo cargar la información completa de Empresa."
+                    }
+                }
+            });
+        } finally {
+            if (secuencia === secuenciaEntidadesExternas) controladorEntidadesExternas = null;
+        }
+    }
 
     async function cargar(nuevoComprobanteID = idActivo) {
         if (esModoAlta(modoActivo) && (nuevoComprobanteID == null || nuevoComprobanteID === "")) {
@@ -355,13 +399,20 @@ export function crearABMAsientos({
         idActivo = id;
         const secuencia = ++secuenciaCarga;
         controladorCarga?.abort();
+        controladorEntidadesExternas?.abort();
         controladorCarga = new AbortController();
         const { signal } = controladorCarga;
         publicar({ cargando: true, error: null });
         try {
             const asiento = await cargarAsiento(id, { signal });
             if (secuencia !== secuenciaCarga || signal?.aborted) return;
-            estado = transformarAsientoABM(asiento, id, modoActivo);
+            const estadoAsiento = transformarAsientoABM(asiento, id, modoActivo);
+            const entidadesExternas = await cargarEntidadesExternasAsiento(
+                estadoAsiento.empresa?.empresaID,
+                { cargarEmpresa: cargarEmpresaDetalle, signal }
+            );
+            if (secuencia !== secuenciaCarga || signal?.aborted) return;
+            estado = { ...estadoAsiento, entidadesExternas };
             estadoBase = copiar(estado);
             oyentes.forEach(oyente => oyente());
         } catch (error) {
@@ -376,6 +427,9 @@ export function crearABMAsientos({
         ++secuenciaCarga;
         controladorCarga?.abort();
         controladorCarga = null;
+        ++secuenciaEntidadesExternas;
+        controladorEntidadesExternas?.abort();
+        controladorEntidadesExternas = null;
     }
 
     return {
@@ -393,6 +447,17 @@ export function crearABMAsientos({
         },
         actualizar(campo, valor) {
             if (!Object.hasOwn(estado, campo) || !puedeEditarCampoAsiento(estado.modo, campo)) return;
+            if (campo === "empresa") {
+                publicarEdicion({
+                    empresa: copiar(valor),
+                    entidadesExternas: crearEstadoEntidadesExternasAsiento(
+                        valor?.empresaID,
+                        { cargando: true }
+                    )
+                });
+                void recargarEmpresaExterna(valor?.empresaID);
+                return;
+            }
             publicarEdicion({ [campo]: copiar(valor) });
         },
         actualizarRenglon(renglonID, filaNueva) {

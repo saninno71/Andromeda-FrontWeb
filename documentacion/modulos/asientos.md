@@ -1,6 +1,31 @@
-# Capa funcional de Asientos
+# Arquitectura del módulo Asientos
 
-## Responsabilidades
+Este documento aplica a Asientos la arquitectura general definida en
+[`documentacion/componentes-reutilizables/abm/README.md`](../componentes-reutilizables/abm/README.md).
+Aquí se describen el flujo alto-medio y las particularidades contables del
+módulo. Las reglas comunes para construir cualquier `XABM` permanecen en el
+documento general.
+
+## Objetivo y alcance
+
+El módulo resuelve la consulta general de asientos (`AsientosBQD`) y el alta,
+consulta, modificación y baja de un asiento individual (`AsientosABM`). La
+pantalla representa el estado, mientras que los modelos funcionales conservan
+los datos y ejecutan los casos de uso sin depender del DOM. Las definiciones de
+grilla, la comunicación HTTP y la preparación para informes permanecen en
+archivos separados.
+
+```text
+JSX / hooks
+    ↓
+modelo funcional ← composición del módulo
+    ↓                    ↓
+definiciones puras      services HTTP
+    ↓                    ↓
+grillas e informes      API Andromeda / API Central de Informes
+```
+
+## Mapa de archivos
 
 | Archivo | Responsabilidad |
 | --- | --- |
@@ -9,14 +34,30 @@
 | `AsientosBQD/asientosService.js` | Comunicación HTTP y traducción de parámetros al contrato existente de la API. Propaga errores. |
 | `AsientosBQD/useAsientos.js` | Suscribe React al modelo, gestiona su ciclo de vida y deriva las filas con cambios locales. |
 | `AsientosBQD/asientosBQD.columnas.js` | Fuente funcional de las columnas de la consulta: campos, títulos, visibilidad, formatos, anchos, claves, totales y editores. No depende de React. |
+| `AsientosBQD/asientosEditores.js` | Adapta los editores reutilizables que la definición de columnas necesita para modificar entidades dentro de la grilla. |
 | `AsientosBQD/ctbAsientosBQD.jsx` | Compone filtros y grilla, consume la definición compartida de columnas y conecta eventos. |
-| `AsientosBQD/FiltroAsientos.jsx` / `AsientosBQD/MasFiltrosAsientos.jsx` | Presentación de los mismos filtros. Conservan solamente estado visual, como abrir el modal y mostrar chips. |
+| `AsientosBQD/FiltroAsientos.jsx` | Presenta los filtros principales y transmite cambios y acciones al modelo de la consulta. |
+| `AsientosBQD/MasFiltrosAsientos.jsx` | Presenta los filtros secundarios en una ventana modal; no mantiene una segunda fuente de datos funcional. |
 | `AsientosBQD/asientos.informes.js` | Entrada para obtener una instantánea de datos para la futura Central de Informes. |
+| `AsientosBQD/asientos.funcional.test.mjs` | Verifica el contrato y las transiciones principales del modelo funcional de la consulta. |
+| `AsientosBQD/asientos.informes.test.mjs` | Verifica la preparación de instantáneas y datos auxiliares para informes. |
 | `AsientosABM/abmAsientos.funcional.js` | Estado del ABM, carga asíncrona, transformación de cabecera y líneas, y operaciones de edición; no depende de React ni de HTTP. |
 | `AsientosABM/abmAsientos.modulos.js` | Compone una instancia del ABM y le inyecta su proveedor de carga. |
-| `AsientosABM/abmAsientosService.js` | Consulta `GET /api/contabilidad/asientos/{id}` y traduce errores HTTP. |
+| `AsientosABM/abmAsientosService.js` | Ejecuta las operaciones HTTP de consulta y persistencia del asiento y traduce errores mediante la infraestructura común. |
 | `AsientosABM/abmAsientos.columnas.js` | Fuente funcional de las columnas del detalle, incluidos permisos, editores y cálculos monetarios. Puede consumirse sin montar el ABM. |
+| `AsientosABM/abmAsientos.permisos.js` | Define qué campos de cabecera y detalle pueden editarse en cada modo del ABM. |
+| `AsientosABM/abmAsientos.validaciones.js` | Aplica validaciones funcionales previas a construir y enviar el alta o la modificación. |
+| `AsientosABM/abmAsientos.cinta.js` | Deriva el estado de las acciones de la cinta a partir del modo y de la política común de los ABM. |
+| `AsientosABM/abmAsientos.entidadesExternas.js` | Coordina la carga de datos completos de otras entidades requeridos por Asientos, comenzando por Empresa, y controla su disponibilidad para impresión. |
+| `AsientosABM/abmAsientos.legacyMapping.js` | Traduce el estado funcional del ABM a la identidad legacy de `frmctbAsientosABM`: controles VB6, objetos agregados y las 37 columnas de `grd(0)`. No lee el DOM ni genera todavía el XML MQL. |
+| `AsientosABM/abmAsientos.impresionService.js` | Genera el snapshot legacy, inicia la orquestación en la API Central de Informes y recupera la vista previa PDF mediante el `operacionId`. |
 | `AsientosABM/ABMAsientos.jsx` | Representa el modal y conecta controles y grilla con el modelo funcional y su definición compartida de columnas. |
+| `AsientosABM/abmAsientos.funcional.test.mjs` | Verifica carga, modos, edición, validación y construcción de solicitudes del modelo funcional. |
+| `AsientosABM/abmAsientos.legacyMapping.test.mjs` | Verifica la traducción del estado actual al contrato de identidades heredadas utilizado por impresión. |
+
+Los archivos `.css` acompañan exclusivamente a su presentación homónima y no
+contienen reglas funcionales. Cualquier archivo `.js` o `.jsx` nuevo debe
+incorporarse a este mapa cuando se agrega al módulo.
 
 Cada pantalla crea su propia instancia. No hay estado global compartido entre distintas consultas de Asientos.
 
@@ -103,7 +144,13 @@ El header reutiliza `ModalHeader` y entrega `ABMIndicadorModo` mediante `conteni
 
 La presentación de la cinta se centraliza en `AsientosABM/abmAsientos.cinta.js` y parte de `obtenerDisponibilidadAccionesRegistroABM`, la política común de los ABM. En Edición se deshabilitan Nuevo, Borrar y Ver; Editar y las flechas conservan su estado normal. En Alta se deshabilitan Nuevo, Editar, Borrar, Ver y las cuatro flechas de navegación. El pie presenta solamente Cancelar y Aceptar: Cancelar descarta el alta y Aceptar crea el registro y cierra. Los próximos casos de uso de la cinta deben agregarse a esa política y no dispersarse entre botones.
 
-Imprimir, Destino, Operación monetaria, Acciones y Trazabilidad permanecen visualmente activos en todos los modos. Todavía no ejecutan una operación hasta que se defina cada caso de uso, pero no se representan como acciones deshabilitadas.
+Imprimir, Destino, Operación monetaria, Acciones y Trazabilidad permanecen visualmente activos en todos los modos. Imprimir inicia la orquestación descripta a continuación; los demás casos de uso todavía no ejecutan una operación, pero no se representan como acciones deshabilitadas.
+
+Imprimir en ABM Asientos abre inmediatamente una ventana de vista previa para conservar el gesto del usuario y evitar el bloqueo de ventanas emergentes. Luego llama a `POST /api/impresiones/marquillas/orquestaciones` de la API Central de Informes. React envía una única solicitud con la base activa, la plantilla, el ComprobanteID, la configuración regional del navegador, las opciones de salida y el snapshot legacy; no coordina las etapas internas. Provisionalmente, la prueba de EQ utiliza `EQ-DBGA`, la plantilla `18423` y destino `vistaPrevia`. La API responde `202 Accepted` con `operacionId` y `vistaPreviaDisponible`. Cuando el PDF está disponible, `abmAsientos.impresionService.js` lo recupera mediante `GET /api/impresiones/marquillas/orquestaciones/{operacionId}/vista-previa` y el JSX reemplaza el contenido transitorio de la ventana con el `Blob` PDF. La resolución dinámica de plantilla, su validación, la medición y el renderizado pertenecen al orquestador del servidor. El flujo normal utiliza `debug: false` y `filasPrueba: 0`. Para validar el paginado puede activarse de forma explícita el diagnóstico e indicar una cantidad de filas; el service sólo entonces repite ciclos completos dentro del snapshot, conserva el balance y registra las cantidades en `datosLegacy.diagnostics.filasPruebaImpresion`. Esta opción no modifica el modelo funcional ni la base SQL.
+
+Al cargar un asiento, su modelo solicita el detalle completo de Empresa mediante el modelo funcional de Empresas, sin montar `ABMEmpresas.jsx`. El resultado se conserva en `estado.entidadesExternas.empresa`; si el usuario cambia Empresa, el dato anterior se descarta y se inicia otra carga protegida contra respuestas atrasadas. La impresión espera que esa entidad esté cargada. `abmAsientos.legacyMapping.js` traduce domicilio, código postal, provincia, teléfono, tipo de teléfono, país y web a las referencias `abmgnrEmpresa.*` requeridas por la plantilla.
+
+ABM Asientos identifica el origen como Andromeda React, módulo Contabilidad y pantalla ABMAsientos. El snapshot informa `formNameLegacy: frmctbAsientosABM`; no repite plantilla, comprobante ni salida. Con diagnóstico activo, la API guarda el JSON completo recibido y el inicio de la orquestación en su filesystem bajo la fecha y el `operacionId` devuelto; React muestra ese identificador únicamente en mensajes técnicos. En el flujo normal no muestra mensajes de éxito ni identificadores internos. Los errores diferencian el bloqueo de la ventana, el inicio de la operación, la falta del PDF, su descarga y su apertura. El usuario se toma del contexto autenticado del servidor cuando esté disponible; React no suplanta esa identidad.
 
 Ojo cambia el modelo a Consulta y el pie reutilizable deja solamente Cerrar. Lápiz cambia a Edición y restituye Cancelar, Aplicar y Aceptar. Nuevo abre otra instancia en Alta con Cancelar y Aceptar. Tacho cambia a Baja y vuelve a mostrar el pie, pero Aplicar y Aceptar permanecen deshabilitados hasta implementar la eliminación del comprobante. Estos cambios de modo no llaman por sí solos a la API.
 

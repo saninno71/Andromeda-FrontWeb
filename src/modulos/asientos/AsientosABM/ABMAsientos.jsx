@@ -3,6 +3,14 @@ import { createPortal } from "react-dom";
 import { crearModeloABMAsientos } from "./abmAsientos.modulos.js";
 import { formatearCotizacion } from "./abmAsientos.funcional.js";
 import { obtenerPresentacionCintaAsientos } from "./abmAsientos.cinta.js";
+import {
+    iniciarOrquestacionImpresionAsiento,
+    obtenerVistaPreviaImpresionAsiento
+} from "./abmAsientos.impresionService.js";
+import {
+    abrirVentanaVistaPreviaBQD,
+    mostrarArchivoEnVistaPreviaBQD
+} from "../../../components/InformesBQD/vistaPreviaBQD.js";
 import ComboEmpresas from "../../../components/ComboEmpresas/ComboEmpresas";
 import ComboMonedas from "../../../components/ComboMonedas/ComboMonedas";
 import ComboNumeraciones from "../../../components/ComboNumeraciones/ComboNumeraciones";
@@ -27,13 +35,37 @@ import nuevo from "../../../components/ABM/assets/nuevo.png";
 import editar from "../../../components/ABM/assets/editar.png";
 import eliminar from "../../../components/ABM/assets/eliminar.png";
 import ver from "../../../components/ABM/assets/ver.png";
-import imprimir from "../../../components/ABM/assets/imprimir.png";
+import iconoImprimir from "../../../components/ABM/assets/imprimir.png";
 import dinero from "../../../components/ABM/assets/dinero.png";
 import acciones from "../../../components/ABM/assets/acciones.png";
 import trazabilidad from "../../../components/ABM/assets/trazabilidad.png";
 import calendario from "../../../assets/btnCalendar.png";
 import calculadoraDeshabilitada from "../../../components/ABM/assets/calculadora-deshabilitada.png";
 import "./ABMAsientos.css";
+
+const CONFIGURACION_DIAGNOSTICO_IMPRESION = Object.freeze({
+    debug: false,
+    filasPrueba: 0
+});
+
+function obtenerMensajeErrorImpresion(error, etapa, operacionId) {
+    const mensajesPorEtapa = {
+        abrir: "El navegador bloqueó la vista previa. Habilite las ventanas emergentes.",
+        iniciar: "No se pudo generar la vista previa.",
+        validar: "La operación terminó sin generar un archivo de vista previa.",
+        descargar: "La vista previa fue generada, pero no se pudo recuperar el archivo.",
+        mostrar: "El archivo de vista previa no pudo abrirse en el navegador."
+    };
+    let mensaje = mensajesPorEtapa[etapa] || "No se pudo generar la vista previa.";
+
+    if (CONFIGURACION_DIAGNOSTICO_IMPRESION.debug) {
+        const detalle = String(error?.message ?? "").trim();
+        if (detalle && detalle !== mensaje) mensaje += ` Detalle: ${detalle}`;
+        if (operacionId) mensaje += ` Operación ${operacionId}.`;
+    }
+
+    return mensaje;
+}
 
 function Lectura({ titulo, valor }) {
     return <label className="abmLectura"><span>{titulo}</span><input aria-label={titulo} value={valor} readOnly /></label>;
@@ -65,7 +97,8 @@ export default function ABMAsientos({
 }) {
     const [modelo] = useState(() => crearModeloABMAsientos(comprobanteID, modo));
     const estado = useSyncExternalStore(modelo.suscribir, modelo.obtenerEstado, modelo.obtenerEstado);
-    const mensajeError = estado.error || estado.errorGuardado;
+    const [estadoImpresion, setEstadoImpresion] = useState({ procesando: false, error: null, mensaje: null });
+    const mensajeError = estado.error || estado.errorGuardado || estadoImpresion.error;
     const cuerpoABM = useScrollErrorABM(mensajeError);
     const contextoCalculos = useMemo(() => ({
         cotizacionLocal: estado.tipoCambioLocal,
@@ -95,7 +128,7 @@ export default function ABMAsientos({
         { id:"editar", disabled:presentacionCinta.deshabilitarEdicion || estado.guardando, onClick:() => activarModo(MODO_ABM.EDICION), icono:<img src={editar} alt="Editar" /> },
         { id:"eliminar", disabled:presentacionCinta.deshabilitarEliminacion || estado.guardando, onClick:() => setConfirmarEliminacion(true), icono:<img src={eliminar} alt="Eliminar" /> },
         { id:"ver", disabled:presentacionCinta.deshabilitarConsulta || estado.guardando, onClick:() => activarModo(MODO_ABM.CONSULTA), icono:<img src={ver} alt="Ver" /> },
-        { id:"imprimir", separadorAntes:true, icono:<img src={imprimir} alt="Imprimir" /> },
+        { id:"imprimir", separadorAntes:true, disabled:estadoImpresion.procesando, onClick:iniciarImpresion, icono:<img src={iconoImprimir} alt="Imprimir" /> },
         { id:"destino", texto:"DESTINO", className:"menuCintaDestino" },
         { id:"dinero", separadorAntes:true, icono:<img src={dinero} alt="Operación monetaria" /> },
         {
@@ -220,6 +253,54 @@ export default function ABMAsientos({
         if (!reposicionado) onCerrar();
     }
 
+    async function iniciarImpresion() {
+        let ventanaVistaPrevia = null;
+        let operacionId = null;
+        let etapaImpresion = "abrir";
+        controlGrid.current?.confirmarEdicion?.();
+        setEstadoImpresion({ procesando: true, error: null, mensaje: null });
+        try {
+            ventanaVistaPrevia = abrirVentanaVistaPreviaBQD();
+            etapaImpresion = "iniciar";
+            const resultado = await iniciarOrquestacionImpresionAsiento(
+                modelo.obtenerEstado(),
+                CONFIGURACION_DIAGNOSTICO_IMPRESION
+            );
+            operacionId = resultado.operacionId;
+            etapaImpresion = "validar";
+            if (!resultado.vistaPreviaDisponible) {
+                throw new Error("La API completó la operación sin generar la vista previa.");
+            }
+
+            etapaImpresion = "descargar";
+            const archivo = await obtenerVistaPreviaImpresionAsiento(
+                operacionId
+            );
+            etapaImpresion = "mostrar";
+            mostrarArchivoEnVistaPreviaBQD(ventanaVistaPrevia, archivo);
+            setEstadoImpresion({
+                procesando: false,
+                error: null,
+                mensaje: CONFIGURACION_DIAGNOSTICO_IMPRESION.debug
+                    ? `Vista previa generada. Operación ${operacionId}.`
+                    : null
+            });
+        } catch (error) {
+            if (ventanaVistaPrevia && !ventanaVistaPrevia.closed) {
+                ventanaVistaPrevia.close();
+            }
+            setEstadoImpresion({
+                procesando: false,
+                error: obtenerMensajeErrorImpresion(
+                    error,
+                    etapaImpresion,
+                    operacionId
+                ),
+                mensaje: null
+            });
+        }
+    }
+
     function agregarItem() {
         controlGrid.current?.confirmarEdicion?.();
         const renglon = modelo.agregarRenglon();
@@ -253,6 +334,11 @@ export default function ABMAsientos({
                         <div className="abmAsientosEstado abmAsientosError" role="alert">
                             <span>{mensajeError}</span>
                             {estado.error && <button type="button" onClick={() => modelo.cargar()}>VOLVER A INTENTAR</button>}
+                        </div>
+                    )}
+                    {estadoImpresion.mensaje && (
+                        <div className="abmAsientosEstado" role="status">
+                            {estadoImpresion.mensaje}
                         </div>
                     )}
                     {mostrarMensajeCarga && estado.cargando && (

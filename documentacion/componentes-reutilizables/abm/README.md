@@ -2,7 +2,19 @@
 
 ## Propósito
 
-Los formularios modales de alta, baja y modificación comparten tres zonas visuales. Estas zonas están desacopladas de Asientos y deben reutilizarse en futuros ABM.
+Este documento es la especificación general para construir un `XABM` en
+Andromeda React. Debe permitir definir su arquitectura sin interpretar el
+código de Asientos. El código de un ABM existente se consulta para reutilizar
+una implementación puntual ya identificada, no para descubrir cómo se organiza
+una pantalla nueva.
+
+Aquí se definen las responsabilidades, contratos y pasos comunes. Los campos,
+endpoints, validaciones y decisiones propias de cada entidad se documentan en
+`documentacion/modulos/<modulo>.md`.
+
+Los formularios modales de alta, baja y modificación comparten tres zonas
+visuales. Estas zonas están desacopladas de Asientos y deben reutilizarse en
+futuros ABM.
 
 ```text
 ModalHeader
@@ -12,6 +24,227 @@ MenuCintaAcciones
 cuerpo específico de la pantalla
 ABMPieAcciones
 ```
+
+## Fuentes de verdad y orden de lectura
+
+Para crear o modificar un ABM se consulta, en este orden:
+
+1. `AGENTS.md` de la raíz, que establece las reglas generales de trabajo;
+2. este documento, que define la arquitectura común de cualquier ABM;
+3. `documentacion/modulos/<modulo>.md`, que define las particularidades del
+   negocio y la responsabilidad de sus archivos;
+4. la documentación específica de Grid, controles de entidades, encabezado,
+   respuestas HTTP y demás componentes que participe la pantalla;
+5. código existente únicamente para copiar o adaptar una solución puntual cuyo
+   contrato ya esté documentado.
+
+Si los primeros cuatro puntos no permiten decidir la estructura del nuevo ABM,
+la documentación está incompleta y debe corregirse antes de interpretar otra
+pantalla como especificación implícita.
+
+## Información necesaria para definir un XABM
+
+Antes de crear archivos deben quedar resueltas estas decisiones propias del
+módulo:
+
+| Decisión | Información requerida |
+|---|---|
+| Identidad | Nombre de la entidad, ID público y clave visible. |
+| Apertura | Modos permitidos y datos que recibe la pantalla al abrirse. |
+| Cabecera | Campos, entidades relacionadas, valores iniciales y campos persistibles. |
+| Detalle | Grillas, identidad de los renglones, columnas, totales y criterio de fila vacía. |
+| Permisos | Campos editables y acciones habilitadas en cada modo. |
+| Persistencia | Endpoints, payloads y respuesta esperada de GET, POST, PUT y DELETE. |
+| Validaciones | Reglas previas al guardado y mensajes funcionales. |
+| Navegación | Pantalla de origen, orden vigente y comportamiento ante cambios pendientes. |
+| Resultado | Qué ocurre después de Aplicar, Aceptar, Cancelar y Borrar. |
+| Dependencias | Entidades externas que deben cargarse aunque no se representen. |
+| Procesos adicionales | Impresión, exportación, trazabilidad u otras salidas. |
+
+No se inventan campos, modos o endpoints para completar esta lista. Lo todavía
+indefinido se registra expresamente como pendiente en el documento del módulo.
+
+## Estructura de archivos de un XABM
+
+La estructura de referencia es:
+
+```text
+src/modulos/x/XABM/
+├── XABM.jsx
+├── xABM.funcional.js
+├── xABM.modulos.js
+├── xABMService.js
+├── xABM.columnas.js             # cuando tiene grilla
+├── xABM.permisos.js
+├── xABM.validaciones.js
+├── xABM.cinta.js
+├── xABM.entidadesExternas.js    # cuando necesita datos ajenos al formulario
+└── xABM.funcional.test.mjs
+```
+
+| Archivo | Responsabilidad |
+|---|---|
+| `XABM.jsx` | Representa el estado, compone controles reutilizables y convierte eventos visuales en operaciones del modelo. |
+| `xABM.funcional.js` | Mantiene el estado, coordina los casos de uso y publica cambios. No importa React, DOM ni componentes. |
+| `xABM.modulos.js` | Construye el modelo e inyecta servicios y otros proveedores funcionales. |
+| `xABMService.js` | Traduce entre el módulo y los endpoints. No mantiene estado de pantalla. |
+| `xABM.columnas.js` | Declara campos, títulos, formatos, máscaras, permisos, editores y totales de la grilla. |
+| `xABM.permisos.js` | Define la política de edición por modo para cabecera y detalle. |
+| `xABM.validaciones.js` | Valida el estado funcional y los payloads antes de persistir. No muestra interfaz. |
+| `xABM.cinta.js` | Deriva acciones visibles y disponibles desde el modo y el estado vigente. |
+| `xABM.entidadesExternas.js` | Carga y coordina estados de otros módulos requeridos por procesos del ABM. |
+| `xABM.funcional.test.mjs` | Verifica el modelo sin montar React. |
+
+Los archivos opcionales se crean solamente cuando existe su responsabilidad.
+No se deja lógica equivalente dispersa dentro del JSX para evitar crear el
+archivo correspondiente.
+
+## Dependencias permitidas entre capas
+
+| Capa | Puede depender de | No debe depender de |
+|---|---|---|
+| JSX | Modelo público, definiciones puras y componentes reutilizables | Endpoints directos, SQL o lectura del DOM para reconstruir datos. |
+| Modelo funcional | Políticas, validaciones y proveedores inyectados | React, componentes, refs visuales o `fetch` directo. |
+| Composición | Modelo funcional, services y otros modelos funcionales | Reglas visuales o reglas de negocio implementadas allí mismo. |
+| Service | Configuración e infraestructura HTTP común | Estado de pantalla, componentes o decisiones de modo. |
+| Columnas/permisos/validaciones/cinta | Funciones puras y contratos comunes | Estado global mutable, DOM o llamadas HTTP. |
+
+La dirección normal es:
+
+```text
+XABM.jsx
+   ↓
+xABM.modulos.js → xABM.funcional.js
+       ↓                 ↓
+ xABMService.js     políticas y definiciones puras
+       ↓
+      API
+```
+
+## Contrato conceptual del estado
+
+Los nombres concretos pueden adaptarse durante la transición de los ABM
+existentes, pero todo modelo debe representar estas responsabilidades:
+
+```js
+{
+  identidad: { id, claveVisible },
+  modo,
+  cargando,
+  cargado,
+  error,
+  cabecera,
+  detalle,
+  modificado,
+  guardando,
+  errorGuardado,
+  entidadesExternas
+}
+```
+
+- `identidad` distingue el ID persistido de la clave mostrada al usuario;
+- `cabecera` y `detalle` contienen valores funcionales, no textos obtenidos del
+  DOM;
+- una instantánea base privada permite derivar `modificado` comparando los
+  campos persistibles normalizados;
+- `cargando` y `guardando` impiden operaciones superpuestas incompatibles;
+- `entidadesExternas` conserva datos funcionales de otros módulos cuando el
+  ABM los necesita para imprimir, exportar o validar.
+
+El documento del módulo debe mostrar la estructura real de su estado y explicar
+cualquier diferencia respecto de este contrato conceptual.
+
+## Contrato público del modelo funcional
+
+Todo modelo funcional ofrece, como mínimo conceptual:
+
+```js
+const modelo = crearModeloXABM(id, modo);
+
+modelo.obtenerEstado();
+modelo.suscribir(oyente);       // devuelve la desuscripción
+await modelo.cargar(id);
+modelo.cancelarCarga();
+modelo.cambiarModo(modo);
+modelo.actualizar(campo, valor);
+await modelo.guardar();
+await modelo.eliminar();
+modelo.destruir?.();
+```
+
+Un ABM sin persistencia o sin baja puede omitir esas operaciones, pero debe
+documentarlo. Las operaciones específicas del detalle, como agregar, actualizar
+o eliminar renglones, pertenecen al modelo y se nombran en el documento del
+módulo. El JSX no modifica objetos internos por referencia.
+
+`suscribir` informa cambios; no entrega una segunda copia autoritativa del
+estado. `cargar` y `guardar` deben resolver con un resultado que permita al JSX
+coordinar cierre o navegación, mientras el detalle del error queda también en
+el estado para su presentación.
+
+## Construcción paso a paso de un XABM
+
+1. Crear o actualizar `documentacion/modulos/<modulo>.md` con las decisiones de
+   la entidad y el mapa previsto de archivos.
+2. Definir la identidad, el estado inicial y las transformaciones entre API y
+   estado funcional.
+3. Implementar el service con los contratos HTTP acordados y el lector común de
+   errores.
+4. Implementar el modelo funcional y probarlo sin React: carga, modos, permisos,
+   cambios reales, validaciones, persistencia y cancelación.
+5. Crear la composición e inyectar services y modelos externos. El modelo no
+   importa implementaciones HTTP.
+6. Definir columnas, permisos, validaciones y cinta en archivos puros.
+7. Construir el JSX conectando el modelo con los componentes reutilizables. No
+   volver a implementar reglas ya presentes en la capa funcional.
+8. Integrar navegación con el BQD o pantalla de origen mediante IDs y APIs
+   públicas, sin acoplar Grid al negocio.
+9. Verificar alta, consulta, edición, baja, errores, respuestas superpuestas y
+   edición pendiente.
+10. Actualizar el mapa real de archivos del módulo y registrar cualquier
+    excepción respecto de esta arquitectura.
+
+## Entidades externas al formulario
+
+Cuando un ABM necesita información que pertenece a otra entidad, la carga se
+implementa en `xABM.entidadesExternas.js` y se compone mediante el modelo
+funcional del módulo propietario o su service público. El JSX del módulo externo
+no se monta para obtener datos.
+
+```js
+entidadesExternas: {
+  empresa: {
+    id: 1,
+    estado: "cargado", // vacio | cargando | cargado | error
+    datos: { /* estado normalizado de Empresa */ },
+    error: null
+  }
+}
+```
+
+Al cambiar el ID se descarta el dato anterior, se inicia una carga identificable
+o cancelable y se ignoran respuestas atrasadas. Un proceso que requiera la
+entidad, como impresión, sólo se inicia cuando su estado es `cargado`.
+
+La subestructura utiliza nombres funcionales. Los nombres de controles o clases
+legacy pertenecen al adaptador de impresión de la pantalla consumidora. El
+módulo propietario de la entidad no conoce qué ABM lo está utilizando.
+
+## Alcance del documento de cada módulo
+
+`documentacion/modulos/<modulo>.md` no vuelve a explicar toda esta arquitectura.
+Debe registrar:
+
+- objetivo, límites y flujo alto-medio del módulo;
+- identidad, endpoints y estructura real del estado;
+- pantallas BQD y ABM que contiene;
+- campos, detalles, permisos y validaciones particulares;
+- entidades externas y procesos adicionales;
+- responsabilidad de cada archivo `.js` y `.jsx` real;
+- diferencias o excepciones respecto de este documento general.
+
+Así, este documento permite construir `XABM` y el documento del módulo permite
+entender por qué `XABM` se comporta de una manera particular.
 
 ## Modos de apertura
 

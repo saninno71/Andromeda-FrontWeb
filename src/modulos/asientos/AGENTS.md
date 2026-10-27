@@ -7,7 +7,7 @@ Estas reglas se aplican a `AsientosBQD`, `AsientosABM` y a la documentación fun
 Antes de modificar Asientos, leer:
 
 1. `C:\Users\sanin\ProyectosReact\andromeda_React\AGENTS.md`.
-2. `C:\Users\sanin\ProyectosReact\andromeda_React\src\modulos\asientos\asientosArquitectura.md`.
+2. `C:\Users\sanin\ProyectosReact\andromeda_React\documentacion\modulos\asientos.md`.
 3. `C:\Users\sanin\ProyectosReact\andromeda_React\documentacion\diagnostico-sistema\GUIA_PROGRAMADOR_CONSULTA_ASIENTOS_V3.md` cuando el cambio involucre la API.
 4. Los `AGENTS.md` de componentes reutilizables que participe el cambio.
 
@@ -33,6 +33,10 @@ Pedir el OK del usuario antes de iniciar una modificación nueva.
 - En cabecera se pueden editar Empresa, Fecha, Detalle, Moneda, Numeración y Observaciones. Número y Punto de venta permanecen informativos para asientos existentes y se habilitan exclusivamente durante el alta. En los renglones solamente Cuenta, Debe, Haber y Detalle.
 - Moneda usa `ComboMonedas` y conserva ID, código y nombre como una entidad. Su servicio mantiene el contrato de búsqueda definitivo, pero temporalmente lee `src/simul/Monedas.json` hasta disponer del endpoint. Punto de venta permanece en lectura en consulta/edición. En el alta, Punto de venta y Número pueden quedar vacíos para numeraciones automáticas; React debe enviarlos como `null`, no convertirlos en cero.
 - Los services de Asientos deben reutilizar `infraestructura/http/respuestaHttp.js`. El intérprete común prioriza los mensajes específicos del diccionario `errors` de ASP.NET sobre el `title` genérico de Problem Details, combina mensajes de varios campos sin duplicarlos y conserva `detail`, `mensaje`, `title` y cuerpos de texto como alternativas. Las reglas de obligatoriedad continúan perteneciendo a la API y a las validaciones funcionales acordadas.
+- La solicitud de marquillas envía en su cabecera la base activa, PlantillaID, ComprobanteID, configuración regional, origen y salida. `datosLegacy` conserva exclusivamente `contractVersion`, `formNameLegacy`, controles, objetos, grillas y diagnósticos; no debe duplicar la identidad funcional ni las opciones de salida.
+- La vista previa se abre sincrónicamente desde el clic de Imprimir. Después del POST, el service recupera el PDF por `operacionId`; el JSX sólo coordina la ventana del navegador y no construye URLs ni ejecuta `fetch` directo. Debe distinguir fallas al abrir la ventana, iniciar la operación, validar el resultado, descargar el PDF y mostrarlo. Los detalles técnicos y el `operacionId` sólo se presentan cuando el diagnóstico está activo.
+- `filasPrueba` es una ayuda de diagnóstico desactivada en el flujo normal: sólo puede ampliar el snapshot cuando `debug=true`, debe repetir ciclos completos para conservar el balance y nunca modifica el estado funcional ni SQL. La configuración normal es `debug=false` y `filasPrueba=0`.
+- `AsientosABM/abmAsientos.entidadesExternas.js` carga mediante el modelo funcional de Empresas los datos completos que no pertenecen al formulario. Se conservan en `estado.entidadesExternas.empresa` con estado de carga, datos y error. El estado utiliza nombres funcionales; solamente `abmAsientos.legacyMapping.js` los traduce a `abmgnrEmpresa.*`.
 - Los estados visuales de la cinta de Asientos se definen en `AsientosABM/abmAsientos.cinta.js` a partir de la política común `obtenerDisponibilidadAccionesRegistroABM`. Agregar allí los próximos casos de uso; no dispersar condiciones de modo entre los descriptores JSX. Durante Edición se deshabilitan Nuevo, Borrar y Ver. Durante Alta se deshabilitan Nuevo, Editar, Borrar, Ver y la navegación; el pie muestra solamente Cancelar y Aceptar.
 - Imprimir, Destino, Operación monetaria, Acciones y Trazabilidad se presentan siempre activos en la cinta. Mientras sus casos de uso sigan pendientes no llevan callback, pero tampoco deben marcarse como `disabled` ni mostrarse grisados.
 
@@ -68,7 +72,7 @@ El DELETE público recibe `gnrComprobantes.ID`, valida todos los `ctbAsientos.ID
 
 Cuando cambie el contrato o el recorrido:
 
-1. actualizar `asientosArquitectura.md`;
+1. actualizar `documentacion/modulos/asientos.md`;
 2. actualizar la guía de consulta de Asientos;
 3. actualizar los `AGENTS.md` de React y backend afectados;
 4. regenerar `asientos-consulta-v3.patch` si cambió la API;

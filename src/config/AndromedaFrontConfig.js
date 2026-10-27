@@ -1,5 +1,8 @@
 export const API_URL_LOCAL = "http://localhost:5062";
 export const API_URL_CLOUD = "https://andromeda-backend-7eko.onrender.com";
+export const CENTRAL_INFORMES_API_URL = "http://localhost:5271";
+// Temporal hasta que el selector de base del login conserve el ambiente elegido.
+export const CENTRAL_INFORMES_BASE_DATOS = "EQ-DBGA";
 
 export let API_URL = API_URL_LOCAL;
 

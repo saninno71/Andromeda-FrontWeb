@@ -17,7 +17,9 @@ Antes de modificar código, también se deben consultar las [instrucciones gener
 
 ## Módulo Asientos
 
-- [Arquitectura funcional de Asientos](../src/modulos/asientos/asientosArquitectura.md)
+- [Documentación de módulos](modulos/README.md)
+- [Arquitectura de Asientos](modulos/asientos.md)
+- [Arquitectura de Empresas](modulos/empresas.md)
 - [Instrucciones específicas del módulo Asientos](../src/modulos/asientos/AGENTS.md)
 
 ## Instrucciones para componentes compartidos

@@ -43,6 +43,19 @@ const respuesta = {
 const cargarAsiento = async () => structuredClone(respuesta);
 const actualizarAsiento = async () => {};
 
+const cargarEmpresaDetalle = async empresaID => ({
+    empresaID,
+    empresaCodigo: "EQ",
+    empresaNombre: "Empresa completa",
+    domicilio: "Calle de prueba 123",
+    cp: "1000",
+    provinciaNombre: "Buenos Aires",
+    paisNombre: "Argentina",
+    tipoTelefono1: "Tel.",
+    telefono1: "11-4000-1000",
+    web: "https://empresa.test"
+});
+
 test("el comportamiento general de ABM lleva el cuerpo al error sin moverlo horizontalmente", () => {
     const cuerpo = { scrollTop: 480, scrollLeft: 37 };
     desplazarCuerpoABMAlError(cuerpo);
@@ -139,6 +152,24 @@ test("el encabezado conserva el número cargado mientras se edita el borrador", 
 
     assert.equal(modelo.obtenerEstado().numero, 1062);
     assert.equal(modelo.obtenerEstado().claveEncabezado, "1062");
+});
+
+test("carga Empresa como entidad externa sin renderizar su ABM", async () => {
+    const modelo = crearABMAsientos({
+        comprobanteID: 100,
+        modo: MODO_ABM.EDICION,
+        cargarAsiento,
+        actualizarAsiento,
+        cargarEmpresaDetalle
+    });
+
+    await modelo.cargar();
+
+    const empresaExterna = modelo.obtenerEstado().entidadesExternas.empresa;
+    assert.equal(empresaExterna.estado, "cargado");
+    assert.equal(empresaExterna.empresaID, 1);
+    assert.equal(empresaExterna.datos.domicilio, "Calle de prueba 123");
+    assert.equal(empresaExterna.datos.web, "https://empresa.test");
 });
 
 test("el tacho puede eliminar por ComprobanteID desde consulta o edición", async () => {

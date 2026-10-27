@@ -4,6 +4,11 @@ Estas reglas complementan los `AGENTS.md` de la raíz y de `src/components`.
 
 Antes de modificar componentes ABM o crear otra pantalla ABM, leer `documentacion/componentes-reutilizables/abm/README.md`.
 
+Ese documento es la especificación arquitectónica del `XABM`. El código de
+Asientos se utiliza solamente como referencia de implementaciones puntuales ya
+documentadas. Si el documento general y el documento del módulo no permiten
+definir la estructura del nuevo ABM, completar primero la documentación.
+
 ## Procedimiento obligatorio para un ABM nuevo
 
 Antes de escribir JSX o servicios:
